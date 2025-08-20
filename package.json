@@ -1,6 +1,6 @@
 {
-  "name": "astri",
-  "version": "2.7.4",
+  "name": "astri-ts",
+  "version": "0.1.0",
   "description": "A fork of Eris",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -22,13 +22,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FireGamer3/astri.git"
+    "url": "git+https://github.com/FireGamer3/astri-ts.git"
   },
   "keywords": [
     "api",
     "discord",
     "discordapp",
-    "astri",
+    "astri-ts",
     "wrapper"
   ],
   "license": "NOLICENSE",

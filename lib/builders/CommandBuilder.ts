@@ -285,7 +285,7 @@ export default class CommandBuilder {
    * @return {*}
    * @memberof CommandBuilder
    */
-  addChannelOption(name: string, description: string, required: boolean = false, types: Array<Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM>> = []) {
+  addChannelOption(name: string, description: string, required: boolean = false, types: Exclude<ChannelType, ChannelType.DM | ChannelType.GroupDM | ChannelType.GuildDirectory>[] = []) {
     this.options.push({
       type: ApplicationCommandOptionType.Channel,
       name,
@@ -458,7 +458,6 @@ export default class CommandBuilder {
         name_localizations: this.name_localizations ?? undefined,
         description_localizations: this.description_localizations ?? undefined,
         description: this.description,
-        // @ts-expect-error -- The types
         options: this.options.map((option) => (option instanceof CommandBuilder ? option.toJSON() : option))
       };
 
@@ -470,7 +469,6 @@ export default class CommandBuilder {
         name_localizations: this.name_localizations ?? undefined,
         description_localizations: this.description_localizations ?? undefined,
         description: this.description,
-        // @ts-expect-error -- The types
         options: this.options.map((option) => (option instanceof CommandBuilder ? option.toJSON() : option))
       };
 

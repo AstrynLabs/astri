@@ -181,13 +181,13 @@ export default class Shard extends EventEmitter<Events> {
       try {
         if (options.reconnect && this.sessionID) {
           if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.close(4901, 'astri: reconnect');
+            this.ws.close(4901, 'astri-ts: reconnect');
           } else {
             this.emit('debug', `Terminating websocket (state: ${this.ws.readyState})`, this.id);
             this.ws.terminate();
           }
         } else {
-          this.ws.close(1000, 'astri: normal');
+          this.ws.close(1000, 'astri-ts: normal');
         }
       } catch (err) {
         this.emit('error', err as Error, this.id);
@@ -368,8 +368,8 @@ export default class Shard extends EventEmitter<Events> {
       intents: Number(this.client.intents.bits),
       properties: {
         os: process.platform,
-        browser: 'astri',
-        device: 'astri'
+        browser: 'astri-ts',
+        device: 'astri-ts'
       }
     };
     if (typeof this.client.options.maxShards === 'number' && this.client.options.maxShards > 1) {

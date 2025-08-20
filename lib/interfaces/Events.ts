@@ -124,7 +124,7 @@ interface Events {
       nsfw?: boolean;
       parentID?: string | null;
       permissionOverwrites: Collection<PermissionOverwrite>;
-      position: number;
+      position: number | undefined;
       rateLimitPerUser: number | null;
       rtcRegion: string | null;
       topic?: string | null;

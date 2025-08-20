@@ -1,7 +1,7 @@
 'use strict';
 
 import type Client from '../Client';
-import { InteractionResponseType, type APIApplicationCommandAutocompleteInteraction, type APIApplicationCommandOptionChoice, ApplicationCommandOptionType, type APIApplicationCommandInteractionDataStringOption, type APIApplicationCommandInteractionDataIntegerOption, type APIApplicationCommandInteractionDataNumberOption, type APIApplicationCommandInteractionDataBasicOption, ApplicationCommandType } from 'discord-api-types/v10';
+import { InteractionResponseType, type APIApplicationCommandAutocompleteInteraction, type APIApplicationCommandOptionChoice, ApplicationCommandOptionType, type APIApplicationCommandInteractionDatastri-tsngOption, type APIApplicationCommandInteractionDataIntegerOption, type APIApplicationCommandInteractionDataNumberOption, type APIApplicationCommandInteractionDataBasicOption, ApplicationCommandType } from 'discord-api-types/v10';
 import Interaction from './Interaction';
 import type { ChannelTypes } from '../interfaces/Types';
 import ChannelFactory from '../factories/ChannelFactory';
@@ -137,11 +137,11 @@ export default class AutocompleteInteraction extends Interaction {
   /**
    * Gets the focused option of the autocomplete interaction.
    *
-   * @return {APIApplicationCommandInteractionDataStringOption | APIApplicationCommandInteractionDataIntegerOption | APIApplicationCommandInteractionDataNumberOption | null}
+   * @return {APIApplicationCommandInteractionDatastri-tsngOption | APIApplicationCommandInteractionDataIntegerOption | APIApplicationCommandInteractionDataNumberOption | null}
    * @memberof AutocompleteInteraction
    */
   focused() {
-    return this.options.find((option) => (option as APIApplicationCommandInteractionDataStringOption | APIApplicationCommandInteractionDataIntegerOption | APIApplicationCommandInteractionDataNumberOption).focused) ?? null;
+    return this.options.find((option) => (option as APIApplicationCommandInteractionDatastri-tsngOption | APIApplicationCommandInteractionDataIntegerOption | APIApplicationCommandInteractionDataNumberOption).focused) ?? null;
   }
 
   getOption<T>(arg: string, type: ApplicationCommandOptionType, required?: boolean): T | null {

@@ -1,7 +1,7 @@
 'use strict';
 
 export default class MultipartData {
-  boundary = '----------------astri';
+  boundary = '----------------astri-ts';
   bufs: Buffer[] = [];
 
   attach(fieldName: string, data: any, filename?: string): void {

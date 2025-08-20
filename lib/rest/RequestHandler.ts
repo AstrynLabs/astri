@@ -21,7 +21,7 @@ export type FileType = { file: Buffer; name: string } | Array<{ file: Buffer; na
 export default class RequestHandler {
   options: RestOptions;
   _client: Client;
-  userAgent = `DiscordBot (https://github.com/FireGamer3/astri), ${pkg.version})`;
+  userAgent = `DiscordBot (https://github.com/FireGamer3/astri-ts), ${pkg.version})`;
   ratelimits: Record<string, SequentialBucket> = {};
   latencyRef: {
     latency: number;

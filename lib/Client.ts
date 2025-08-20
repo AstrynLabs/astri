@@ -190,7 +190,7 @@ import ZlibHelper from './util/Zlib';
 const sleep = async (ms: number): Promise<NodeJS.Timeout> => new Promise((res) => setTimeout(res, ms));
 
 /**
- * Represents the main astri client
+ * Represents the main astri-ts client
  * @extends EventEmitter
  * @prop {Object?} application Object containing the bot application's ID and its public flags
  * @prop {Boolean} bot Whether the bot user belongs to an OAuth2 application
@@ -200,12 +200,12 @@ const sleep = async (ms: number): Promise<NodeJS.Timeout> => new Promise((res) =
  * @prop {Collection<Guild>} guilds Collection of guilds the bot is in
  * @prop {Object} guildShardMap Object mapping guild IDs to shard IDs
  * @prop {Object} notes Object mapping user IDs to user notes (user accounts only)
- * @prop {Object} options astri options
+ * @prop {Object} options astri-ts options
  * @prop {Object} privateChannelMap Object mapping user IDs to private channel IDs
  * @prop {Collection<PrivateChannel>} privateChannels Collection of private channels the bot is in
  * @prop {Collection<Relationship>} relationships Collection of relationships the bot user has (user accounts only)
  * @prop {RequestHandler} requestHandler The request handler the client will use
- * @prop {Collection<Shard>} shards Collection of shards astri is using
+ * @prop {Collection<Shard>} shards Collection of shards astri-ts is using
  * @prop {number} startTime Timestamp of bot ready event
  * @prop {Object} threadGuildMap Object mapping thread channel IDs to guild IDs
  * @prop {Collection<UnavailableGuild>} unavailableGuilds Collection of unavailable guilds the bot is in
@@ -1205,6 +1205,7 @@ export default class Client extends EventEmitter<Events> {
     if (!channel) {
       return Promise.reject(new Error(`Channel ${channelID} not found`));
     }
+    if (!channel.position) return Promise.reject(new Error(`Channel ${channelID} does not have a position`));
     if (channel.position === position) {
       return Promise.resolve();
     }
@@ -1212,9 +1213,9 @@ export default class Client extends EventEmitter<Events> {
     const max = Math.max(position, channel.position);
     const channelsArray = channels
       .filter((chan) => {
-        return chan.type === channel.type && min <= chan.position && chan.position <= max && chan.id !== channelID;
+        return 'position' in chan && chan.type === channel.type && min <= chan.position! && chan.position! <= max && chan.id !== channelID;
       })
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => a.position! - b.position!);
     if (position > channel.position) {
       channelsArray.push(channel);
     } else {
@@ -2227,7 +2228,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTChannel(channelID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIChannelResult>('GET', Endpoints.CHANNEL(channelID), true).then((channel) => ChannelFactory.create(channel, this));
   }
@@ -2240,7 +2241,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuild(guildID: string, withCounts = false) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler
       .request<RESTGetAPIGuildResult>('GET', Endpoints.GUILD(guildID), true, {
@@ -2256,7 +2257,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildChannels(guildID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildChannelsResult>('GET', Endpoints.GUILD_CHANNELS(guildID), true).then((channels) => channels.map((channel) => ChannelFactory.create(channel, this)));
   }
@@ -2269,7 +2270,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildEmoji(guildID: string, emojiID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildEmojiResult>('GET', Endpoints.GUILD_EMOJI(guildID, emojiID), true);
   }
@@ -2281,7 +2282,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildEmojis(guildID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildEmojisResult>('GET', Endpoints.GUILD_EMOJIS(guildID), true);
   }
@@ -2294,7 +2295,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildMember(guildID: string, memberID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildMemberResult>('GET', Endpoints.GUILD_MEMBER(guildID, memberID), true).then((member) => new Member(member, this.guilds.get(guildID)!));
   }
@@ -2310,7 +2311,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildMembers(guildID: string, options: RESTGetAPIGuildMembersQuery = {}) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildMembersResult>('GET', Endpoints.GUILD_MEMBERS(guildID), true, options).then((members) => members.map((member) => new Member(member, this.guilds.get(guildID)!)));
   }
@@ -2322,7 +2323,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildRoles(guildID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildRolesResult>('GET', Endpoints.GUILD_ROLES(guildID), true).then((roles) => roles.map((role) => new Role(role, null)));
   }
@@ -2339,7 +2340,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuilds(options: RESTGetAPICurrentUserGuildsQuery = {}) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     if (!options || typeof options !== 'object') {
       options = {
@@ -2357,7 +2358,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildSticker(guildID: string, stickerID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildStickerResult>('GET', Endpoints.GUILD_STICKER(guildID, stickerID), true);
   }
@@ -2369,7 +2370,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTGuildStickers(guildID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIGuildStickersResult>('GET', Endpoints.GUILD_STICKERS(guildID), true);
   }
@@ -2381,7 +2382,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTSticker(stickerID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIStickerResult>('GET', Endpoints.STICKER(stickerID), true);
   }
@@ -2393,7 +2394,7 @@ export default class Client extends EventEmitter<Events> {
    */
   getRESTUser(userID: string) {
     if (!this.options.restMode) {
-      return Promise.reject(new Error('astri REST mode is not enabled'));
+      return Promise.reject(new Error('astri-ts REST mode is not enabled'));
     }
     return this.requestHandler.request<RESTGetAPIUserResult>('GET', Endpoints.USER(userID), true).then((user) => new User(user, this));
   }
@@ -2799,7 +2800,7 @@ export interface ClientOptions {
   allowedMentions?: AllowedMentions;
 
   /**
-   * Have astri autoreconnect when connection is lost
+   * Have astri-ts autoreconnect when connection is lost
    *
    * @type {boolean}
    * @memberof ClientOptions
@@ -2871,7 +2872,7 @@ export interface ClientOptions {
   guildCreateTimeout?: number;
 
   /**
-   * A list of [intent names](/astri/docs/reference), pre-shifted intent numbers to add, or a raw bitmask value describing the intents to subscribe to. Some intents, like `guildPresences` and `guildMembers`, must be enabled on your application's page to be used. By default, all non-privileged intents are enabled
+   * A list of [intent names](/astri-ts/docs/reference), pre-shifted intent numbers to add, or a raw bitmask value describing the intents to subscribe to. Some intents, like `guildPresences` and `guildMembers`, must be enabled on your application's page to be used. By default, all non-privileged intents are enabled
    *
    * @type {(number | Array<number | string>)}
    * @memberof ClientOptions
@@ -2911,7 +2912,7 @@ export interface ClientOptions {
   maxResumeAttempts?: number;
 
   /**
-   * The total number of shards you want to run. If "auto" astri will use Discord's recommended shard count
+   * The total number of shards you want to run. If "auto" astri-ts will use Discord's recommended shard count
    *
    * @type {(number | string)}
    * @memberof ClientOptions
@@ -2974,7 +2975,7 @@ export interface ClientOptions {
   seedVoiceConnections?: boolean;
 
   /**
-   * The number of shards that can start simultaneously. If "auto" astri will use Discord's recommended shard concurrency
+   * The number of shards that can start simultaneously. If "auto" astri-ts will use Discord's recommended shard concurrency
    *
    * @type {(string | number)}
    * @memberof RestOptions
@@ -3079,7 +3080,7 @@ export interface RestOptions {
   port?: number;
 
   /**
-   * The average request latency at which astri will start
+   * The average request latency at which astri-ts will start
    *
    * @type {number}
    * @memberof RestOptions

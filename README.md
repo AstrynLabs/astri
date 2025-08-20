@@ -1,3 +1,3 @@
-# Astri
+# astri-ts
 
-Astri is a personal fork of Eris.
+astri-ts is a personal fork of Eris.

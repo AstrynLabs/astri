@@ -10,7 +10,7 @@ import PermissionBitfield from '../util/PermissionBitfield';
 export default class GuildChannel extends BaseChannel {
   guild: Guild;
   name: string;
-  position: number;
+  position?: number;
   parentID?: string | null;
   nsfw?: boolean;
   permissionOverwrites = new Collection(PermissionOverwrite);
@@ -25,7 +25,7 @@ export default class GuildChannel extends BaseChannel {
     super.update(data);
     if (data.type) this.type = data.type;
     if (data.name) this.name = data.name;
-    if (data.position) this.position = data.position;
+    if ('position' in data) this.position = data.position;
     if (data.parent_id) this.parentID = data.parent_id;
     if (data.nsfw) this.nsfw = data.nsfw;
     if (data.permission_overwrites) {
