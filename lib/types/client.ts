@@ -1,0 +1,74 @@
+import type { Cache, CacheManager } from '../core/cache';
+import type { Emoji, Guild, Member, Role, User } from '../core/structures';
+import type { Shard } from '../core/ws';
+import type { CacheManagerOptions } from './cache';
+import type { GatewayDispatchData } from './discord';
+import type { GatewayDispatchPayload, GatewayReadyData, ShardOptions } from './gateway';
+
+export interface ClientOptions extends Omit<ShardOptions, 'total'> {
+    /** Number of shards to run. Default: `1`. */
+    shards?: number;
+    /** Shards allowed to identify per 5 second window, from `GET /gateway/bot`'s `max_concurrency`. Default: `1`. */
+    maxConcurrency?: number;
+    /** How each kind of structure is cached. */
+    cache?: CacheManagerOptions<ClientCaches>;
+}
+
+/** Every cache kind the client builds, mapped to the structure it holds. */
+export interface ClientCaches {
+    guilds: Guild;
+    users: User;
+    roles: Role;
+    members: Member;
+    emojis: Emoji;
+}
+
+export interface ClientEvents {
+    /** Every shard has finished its first `READY`. Guilds may still be arriving. */
+    ready: [];
+    /** A shard started a new session. */
+    shardReady: [shard: Shard, data: GatewayReadyData];
+    /** A shard resumed a dropped session. */
+    shardResume: [shard: Shard];
+    /** A shard's connection closed. It reconnects on its own unless the code is fatal or `autoReconnect` is off. */
+    shardDisconnect: [shard: Shard, code: number, reason: string];
+    /** Every dispatch from every shard, before the library handles it. */
+    rawDispatch: [payload: GatewayDispatchPayload, shard: Shard];
+    error: [error: Error, shard: Shard];
+    debug: [message: string];
+    /** The client joined a guild. */
+    guildCreate: [guild: Guild];
+    /** A guild the client was already in became visible: at startup, or when an outage ends. */
+    guildAvailable: [guild: Guild];
+    /** `old` is a shallow copy from before the update, or `null` if the guild was not cached. */
+    guildUpdate: [guild: Guild, old: Guild | null];
+    /** The client left or was removed from a guild. */
+    guildDelete: [id: string, guild: Guild | null];
+    /** A guild dropped out because of an outage. It stays out of the cache until `guildAvailable`. */
+    guildUnavailable: [id: string, guild: Guild | null];
+    guildRoleCreate: [role: Role];
+    guildRoleUpdate: [role: Role, old: Role | null];
+    guildRoleDelete: [id: string, guildId: string, role: Role | null];
+    guildMemberAdd: [member: Member];
+    guildMemberUpdate: [member: Member, old: Member | null];
+    guildMemberRemove: [user: User, guildId: string, member: Member | null];
+    guildBanAdd: [user: User, guildId: string];
+    guildBanRemove: [user: User, guildId: string];
+    /** `emojis` is the guild's full emoji list after the update. `old` is `null` if the guild was not cached. */
+    guildEmojisUpdate: [guildId: string, emojis: Emoji[], old: Emoji[] | null];
+}
+
+/** What structures and dispatch handlers need from the client. */
+export interface ClientContext {
+    readonly cache: CacheManager<ClientCaches>;
+    readonly guilds: Cache<string, Guild>;
+    readonly users: Cache<string, User>;
+    /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
+    readonly unavailableGuilds: Set<string>;
+    emit<Event extends keyof ClientEvents>(event: Event, ...args: ClientEvents[Event]): boolean;
+}
+
+/** Updates the client's state for one dispatch event and emits the matching client event. */
+export type DispatchHandler<T extends keyof GatewayDispatchData> = (client: ClientContext, data: GatewayDispatchData[T], shard: Shard) => void;
+
+export type DispatchHandlers = { [T in keyof GatewayDispatchData]: DispatchHandler<T> };

@@ -1,22 +1,21 @@
 {
   "name": "astri-ts",
-  "version": "0.1.0",
-  "description": "A fork of Eris",
+  "version": "1.0.0",
+  "description": "A Efficient and Fast Discord API Wrapper for Node.js",
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "default": "./dist/index.js"
     }
   },
   "engines": {
     "node": ">=10.4.0"
   },
   "scripts": {
-    "build": "tsup lib --format cjs,esm --dts --clean --no-splitting",
+    "build": "tsup lib --format esm --dts --clean --no-splitting",
     "format": "prettier . --write",
     "prepublishOnly": "npm run build"
   },
@@ -33,21 +32,22 @@
   ],
   "license": "NOLICENSE",
   "dependencies": {
-    "discord-api-types": "^0.38.1",
-    "eventemitter3": "^5.0.1",
-    "ws": "^8.16.0"
+    "eventemitter3": "^5.0.4",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.0",
-    "@eslint/js": "^9.22.0",
-    "@types/node": "^20.12.7",
-    "@types/ws": "^8.5.11",
-    "globals": "^16.0.0",
-    "prettier": "^3.2.5",
+    "@eslint/eslintrc": "^3.3.7",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "@types/ws": "^8.18.2",
+    "@typescript/typescript6": "^6.0.2",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
     "tsconfig-paths": "^4.2.0",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.5",
-    "typescript-eslint": "^8.26.1"
+    "tsup": "^9.0.0",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.72.0"
   },
   "peerDependencies": {
     "zlib-sync": "0.1.9"
