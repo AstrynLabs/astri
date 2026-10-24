@@ -1,6 +1,7 @@
 import type { ClientContext, GatewayGuildCreateData } from '../../types';
 import type { Cache } from '../cache';
 import { Base } from './base';
+import { createChannel, createThreadChannel, type Channel, type ThreadChannel } from './channels';
 import { Emoji } from './emoji';
 import { Member } from './member';
 import { Role } from './role';
@@ -40,6 +41,9 @@ export class Guild extends Base {
     memberCount = 0;
     readonly roles: Cache<string, Role>;
     readonly emojis: Cache<string, Emoji>;
+    readonly channels: Cache<string, Channel>;
+    /** Active threads, plus archived ones seen since they were cached. */
+    readonly threads: Cache<string, ThreadChannel>;
     /** Cached members. Usually a subset: large guilds only send online members up front. */
     readonly members: Cache<string, Member>;
 
@@ -47,6 +51,8 @@ export class Guild extends Base {
         super(client, data.id);
         this.roles = client.cache.create('roles');
         this.emojis = client.cache.create('emojis');
+        this.channels = client.cache.create('channels');
+        this.threads = client.cache.create('threads');
         this.members = client.cache.create('members');
         this.patch(data);
     }
@@ -54,7 +60,8 @@ export class Guild extends Base {
     /**
      * Applies a payload. Fields missing from `data` keep their current value.
      *
-     * `roles` and `emojis` are taken as the complete list: entries not in it are dropped. `members` is only
+     * `roles`, `emojis`, `channels` and `threads` are taken as the complete list: entries not in it are dropped. A
+     * channel or thread whose type changed is replaced with a new instance of the matching class. `members` is only
      * ever a partial list, so it adds and updates without dropping anyone.
      */
     patch(data: Partial<GatewayGuildCreateData>): void {
@@ -88,6 +95,20 @@ export class Guild extends Base {
         if (data.member_count !== undefined) this.memberCount = data.member_count;
         if (data.roles !== undefined) replaceAll(this.roles, data.roles, (role) => new Role(this.client, role, this.id));
         if (data.emojis !== undefined) replaceAll(this.emojis, data.emojis, (emoji) => new Emoji(this.client, emoji, this.id));
+        if (data.channels !== undefined)
+            replaceAll(
+                this.channels,
+                data.channels,
+                (channel) => createChannel(this.client, channel, this.id),
+                (cached, channel) => cached.type === channel.type
+            );
+        if (data.threads !== undefined)
+            replaceAll(
+                this.threads,
+                data.threads,
+                (thread) => createThreadChannel(this.client, thread, this.id),
+                (cached, thread) => cached.type === thread.type
+            );
         if (data.members !== undefined) {
             for (const member of data.members) {
                 const cached = this.members.peek(member.user.id);
@@ -98,12 +119,12 @@ export class Guild extends Base {
     }
 }
 
-function replaceAll<V extends { patch(data: D): void }, D extends { id: string }>(cache: Cache<string, V>, items: D[], create: (data: D) => V): void {
+function replaceAll<V extends { patch(data: D): void }, D extends { id: string }>(cache: Cache<string, V>, items: D[], create: (data: D) => V, reuse: (cached: V, data: D) => boolean = () => true): void {
     const ids = new Set<string>();
     for (const item of items) {
         ids.add(item.id);
         const cached = cache.peek(item.id);
-        if (cached !== undefined) cached.patch(item);
+        if (cached !== undefined && reuse(cached, item)) cached.patch(item);
         else cache.set(item.id, create(item));
     }
     cache.sweep((_value, id) => !ids.has(id));

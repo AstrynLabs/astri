@@ -1,3 +1,4 @@
+export * from './channel';
 export * from './dispatch';
 export * from './emoji';
 export * from './guild';

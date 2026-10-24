@@ -17,9 +17,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     readonly guilds: Cache<string, Guild>;
     readonly users: Cache<string, User>;
     readonly unavailableGuilds = new Set<string>();
-    /** Every shard, keyed by id. Filled by `connect()`. */
     readonly shards = new Map<number, Shard>();
-    /** The bot's own user. `null` until the first `READY`. */
     user: User | null = null;
 
     readonly #options: ClientOptions;

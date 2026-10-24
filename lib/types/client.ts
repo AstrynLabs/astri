@@ -1,5 +1,5 @@
 import type { Cache, CacheManager } from '../core/cache';
-import type { Emoji, Guild, Member, Role, User } from '../core/structures';
+import type { Channel, Emoji, Guild, Member, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
 import type { GatewayDispatchData } from './discord';
@@ -21,6 +21,9 @@ export interface ClientCaches {
     roles: Role;
     members: Member;
     emojis: Emoji;
+    channels: Channel;
+    threads: ThreadChannel;
+    threadMembers: ThreadMember;
 }
 
 export interface ClientEvents {
@@ -56,6 +59,31 @@ export interface ClientEvents {
     guildBanRemove: [user: User, guildId: string];
     /** `emojis` is the guild's full emoji list after the update. `old` is `null` if the guild was not cached. */
     guildEmojisUpdate: [guildId: string, emojis: Emoji[], old: Emoji[] | null];
+    channelCreate: [channel: Channel];
+    /**
+     * `old` is a shallow copy from before the update, or `null` if the channel was not cached. If the type changed,
+     * `channel` is a new instance of the matching class and `old` is the replaced one.
+     */
+    channelUpdate: [channel: Channel, old: Channel | null];
+    /** `channel` is the cached instance if there was one, otherwise built from the payload. */
+    channelDelete: [channel: Channel];
+    /** A message was pinned or unpinned. `lastPinTimestamp` is Unix ms, or `null` with no pins left. */
+    channelPinsUpdate: [channelId: string, guildId: string | null, lastPinTimestamp: number | null, channel: Channel | null];
+    /** A thread was created, or the client was added to an existing one (`newlyCreated` is then `false`). */
+    threadCreate: [thread: ThreadChannel, newlyCreated: boolean];
+    /** `old` is a shallow copy from before the update, or `null` if the thread was not cached. */
+    threadUpdate: [thread: ThreadChannel, old: ThreadChannel | null];
+    threadDelete: [id: string, guildId: string, parentId: string, thread: ThreadChannel | null];
+    /**
+     * The client gained access to channels and was sent their active threads. `channelIds` lists the synced
+     * parents, or is `null` when the whole guild was synced. Cached threads under them that are not in `threads`
+     * were dropped.
+     */
+    threadListSync: [guildId: string, threads: ThreadChannel[], channelIds: string[] | null];
+    /** The client's own membership in a thread changed. */
+    threadMemberUpdate: [member: ThreadMember, thread: ThreadChannel | null];
+    /** Users were added to or removed from a thread. Other users than the client need the guild members intent. */
+    threadMembersUpdate: [threadId: string, guildId: string, added: ThreadMember[], removedIds: string[], thread: ThreadChannel | null];
 }
 
 /** What structures and dispatch handlers need from the client. */
@@ -63,6 +91,7 @@ export interface ClientContext {
     readonly cache: CacheManager<ClientCaches>;
     readonly guilds: Cache<string, Guild>;
     readonly users: Cache<string, User>;
+    readonly user: User | null;
     /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
     readonly unavailableGuilds: Set<string>;
     emit<Event extends keyof ClientEvents>(event: Event, ...args: ClientEvents[Event]): boolean;

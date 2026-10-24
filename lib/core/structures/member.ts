@@ -2,6 +2,7 @@ import type { APIGuildMember, ClientContext } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
+import { parseTimestamp } from './util';
 
 /** A user's membership in one guild. Shares its `id` with the user. */
 export class Member extends Base {
@@ -53,8 +54,4 @@ export class Member extends Base {
         if (data.pending !== undefined) this.pending = data.pending;
         if (data.communication_disabled_until !== undefined) this.communicationDisabledUntil = parseTimestamp(data.communication_disabled_until);
     }
-}
-
-function parseTimestamp(value: string | null): number | null {
-    return value === null ? null : Date.parse(value);
 }
