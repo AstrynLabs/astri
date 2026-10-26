@@ -1,6 +1,6 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
-import type { Channel, Emoji, Guild, Member, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
+import type { AnyInteraction, Channel, Emoji, Guild, Member, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
 import type { GatewayDispatchData } from './discord';
@@ -90,6 +90,8 @@ export interface ClientEvents {
     threadMemberUpdate: [member: ThreadMember, thread: ThreadChannel | null];
     /** Users were added to or removed from a thread. Other users than the client need the guild members intent. */
     threadMembersUpdate: [threadId: string, guildId: string, added: ThreadMember[], removedIds: string[], thread: ThreadChannel | null];
+    /** A command, component, autocomplete or modal submission needs a response within 3 seconds. Narrow with `instanceof`. */
+    interactionCreate: [interaction: AnyInteraction];
 }
 
 /** What structures and dispatch handlers need from the client. */
@@ -99,6 +101,7 @@ export interface ClientContext {
     readonly users: Cache<string, User>;
     readonly rest: RequestHandler;
     readonly user: User | null;
+    readonly applicationId: string | null;
     /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
     readonly unavailableGuilds: Set<string>;
     emit<Event extends keyof ClientEvents>(event: Event, ...args: ClientEvents[Event]): boolean;

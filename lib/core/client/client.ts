@@ -21,6 +21,8 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     readonly unavailableGuilds = new Set<string>();
     readonly shards = new Map<number, Shard>();
     user: User | null = null;
+    /** The bot's application id, known after the first `READY`. Needed to register commands. */
+    applicationId: string | null = null;
 
     readonly #options: ClientOptions;
     readonly #shardCount: number;
@@ -114,6 +116,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
 
     #onShardReady(shard: Shard, data: GatewayReadyData): void {
         this.user = upsertUser(this, data.user as unknown as APIUser);
+        this.applicationId = data.application.id;
         for (const guild of data.guilds) this.unavailableGuilds.add(guild.id);
         this.emit('shardReady', shard, data);
 

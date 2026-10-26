@@ -2,6 +2,7 @@ import type { ChannelTypes } from '../../constants';
 import type { APIChannel, APIThreadMember } from './channel';
 import type { APIGuildEmoji } from './emoji';
 import type { APIGuild } from './guild';
+import type { APIInteraction } from './interaction';
 import type { APIGuildMember } from './member';
 import type { APIRole } from './role';
 import type { APIUser } from './user';
@@ -143,4 +144,5 @@ export interface GatewayDispatchData {
     THREAD_LIST_SYNC: GatewayThreadListSyncData;
     THREAD_MEMBER_UPDATE: GatewayThreadMemberUpdateData;
     THREAD_MEMBERS_UPDATE: GatewayThreadMembersUpdateData;
+    INTERACTION_CREATE: APIInteraction;
 }

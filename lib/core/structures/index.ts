@@ -2,6 +2,7 @@ export * from './base';
 export * from './channels';
 export * from './emoji';
 export * from './guild';
+export * from './interactions';
 export * from './member';
 export * from './role';
 export * from './threadMember';

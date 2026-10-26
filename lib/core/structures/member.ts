@@ -55,3 +55,16 @@ export class Member extends Base {
         if (data.communication_disabled_until !== undefined) this.communicationDisabledUntil = parseTimestamp(data.communication_disabled_until);
     }
 }
+
+/** The cached member for `data.user.id` patched with `data`, or a new one, cached if its guild is. */
+export function upsertMember(client: ClientContext, data: Partial<APIGuildMember> & Pick<APIGuildMember, 'user'>, guildId: string): Member {
+    const members = client.guilds.get(guildId)?.members;
+    const cached = members?.get(data.user.id);
+    if (cached !== undefined) {
+        cached.patch(data);
+        return cached;
+    }
+    const created = new Member(client, data, guildId);
+    members?.set(created.id, created);
+    return created;
+}

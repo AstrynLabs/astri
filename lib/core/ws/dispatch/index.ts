@@ -16,6 +16,7 @@ import { guildRoleCreate } from './guildRoleCreate';
 import { guildRoleDelete } from './guildRoleDelete';
 import { guildRoleUpdate } from './guildRoleUpdate';
 import { guildUpdate } from './guildUpdate';
+import { interactionCreate } from './interactionCreate';
 import { threadCreate } from './threadCreate';
 import { threadDelete } from './threadDelete';
 import { threadListSync } from './threadListSync';
@@ -46,7 +47,8 @@ export const dispatchHandlers: DispatchHandlers = {
     THREAD_DELETE: threadDelete,
     THREAD_LIST_SYNC: threadListSync,
     THREAD_MEMBER_UPDATE: threadMemberUpdate,
-    THREAD_MEMBERS_UPDATE: threadMembersUpdate
+    THREAD_MEMBERS_UPDATE: threadMembersUpdate,
+    INTERACTION_CREATE: interactionCreate
 };
 
 /** Runs the handler for `payload.t`. Dispatches without one are ignored. */
