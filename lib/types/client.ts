@@ -1,9 +1,11 @@
 import type { Cache, CacheManager } from '../core/cache';
+import type { RequestHandler } from '../core/rest';
 import type { Channel, Emoji, Guild, Member, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
 import type { GatewayDispatchData } from './discord';
 import type { GatewayDispatchPayload, GatewayReadyData, ShardOptions } from './gateway';
+import type { RESTOptions, RESTRateLimitInfo } from './rest';
 
 export interface ClientOptions extends Omit<ShardOptions, 'total'> {
     /** Number of shards to run. Default: `1`. */
@@ -12,6 +14,8 @@ export interface ClientOptions extends Omit<ShardOptions, 'total'> {
     maxConcurrency?: number;
     /** How each kind of structure is cached. */
     cache?: CacheManagerOptions<ClientCaches>;
+    /** REST request handling. The token is taken from `token`. */
+    rest?: Omit<RESTOptions, 'token'>;
 }
 
 /** Every cache kind the client builds, mapped to the structure it holds. */
@@ -38,6 +42,8 @@ export interface ClientEvents {
     /** Every dispatch from every shard, before the library handles it. */
     rawDispatch: [payload: GatewayDispatchPayload, shard: Shard];
     error: [error: Error, shard: Shard];
+    /** A REST request hit a 429 and is queued to retry. */
+    rateLimit: [info: RESTRateLimitInfo];
     debug: [message: string];
     /** The client joined a guild. */
     guildCreate: [guild: Guild];
@@ -91,6 +97,7 @@ export interface ClientContext {
     readonly cache: CacheManager<ClientCaches>;
     readonly guilds: Cache<string, Guild>;
     readonly users: Cache<string, User>;
+    readonly rest: RequestHandler;
     readonly user: User | null;
     /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
     readonly unavailableGuilds: Set<string>;

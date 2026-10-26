@@ -17,7 +17,8 @@
   "scripts": {
     "build": "tsup lib --format esm --dts --clean --no-splitting",
     "format": "prettier . --write",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "generate:openapi": "pnpm dlx --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json -o lib/types/discord/openapi.ts && node scripts/generate-routes.mjs && prettier lib/types/discord/openapi.ts lib/constants/routes.ts --write"
   },
   "repository": {
     "type": "git",

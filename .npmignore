@@ -13,3 +13,4 @@ tsconfig*
 .prettierrc
 .eslintrc.json
 renovate.json
+scripts

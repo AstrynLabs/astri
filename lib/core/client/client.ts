@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3';
 import type { APIUser, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayReadyData } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
+import { RequestHandler } from '../rest';
 import type { Guild, User } from '../structures';
 import { upsertUser } from '../structures';
 import { handleDispatch, Shard } from '../ws';
@@ -16,6 +17,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     readonly cache: CacheManager<ClientCaches>;
     readonly guilds: Cache<string, Guild>;
     readonly users: Cache<string, User>;
+    readonly rest: RequestHandler;
     readonly unavailableGuilds = new Set<string>();
     readonly shards = new Map<number, Shard>();
     user: User | null = null;
@@ -39,6 +41,9 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         this.cache = new CacheManager(options.cache);
         this.guilds = this.cache.create('guilds');
         this.users = this.cache.create('users');
+        this.rest = new RequestHandler({ ...options.rest, token: options.token });
+        this.rest.on('rateLimit', (info) => this.emit('rateLimit', info));
+        this.rest.on('debug', (message) => this.emit('debug', message));
     }
 
     /** Whether every shard has finished its first `READY`. */
@@ -87,6 +92,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     destroy(): void {
         this.disconnect();
         this.cache.destroy();
+        this.rest.removeAllListeners();
         this.removeAllListeners();
     }
 
