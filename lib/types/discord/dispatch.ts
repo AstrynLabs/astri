@@ -1,9 +1,10 @@
-import type { ChannelTypes } from '../../constants';
+import type { ChannelTypes, ReactionTypes } from '../../constants';
 import type { APIChannel, APIThreadMember } from './channel';
 import type { APIGuildEmoji } from './emoji';
 import type { APIGuild } from './guild';
 import type { APIInteraction } from './interaction';
 import type { APIGuildMember } from './member';
+import type { APIMessage, APIReactionEmoji, GatewayMessageMember } from './message';
 import type { APIRole } from './role';
 import type { APIUser } from './user';
 
@@ -120,6 +121,77 @@ export interface GatewayThreadMembersUpdateData {
     removed_member_ids?: string[];
 }
 
+/** `MESSAGE_CREATE` and `MESSAGE_UPDATE` body: the message plus the guild it is in, and the author's and mentioned users' guild memberships. */
+export interface GatewayMessageCreateData extends Omit<APIMessage, 'mentions'> {
+    guild_id?: string;
+    /** Guild messages only. Left out for webhooks. */
+    member?: GatewayMessageMember;
+    /** Each user carries their guild membership in guild messages. */
+    mentions: (APIMessage['mentions'][number] & { member?: GatewayMessageMember })[];
+}
+
+export interface GatewayMessageDeleteData {
+    id: string;
+    channel_id: string;
+    guild_id?: string;
+}
+
+export interface GatewayMessageDeleteBulkData {
+    ids: string[];
+    channel_id: string;
+    guild_id?: string;
+}
+
+export interface GatewayMessageReactionRemoveData {
+    user_id: string;
+    channel_id: string;
+    message_id: string;
+    guild_id?: string;
+    emoji: APIReactionEmoji;
+    /** Whether it is a super reaction. */
+    burst: boolean;
+    type: ReactionTypes;
+}
+
+export interface GatewayMessageReactionAddData extends GatewayMessageReactionRemoveData {
+    /** Guild reactions only. */
+    member?: APIGuildMember;
+    message_author_id?: string;
+    /** Super reactions only: hex colors used to render the animation. */
+    burst_colors?: string[];
+}
+
+export interface GatewayMessageReactionRemoveAllData {
+    channel_id: string;
+    message_id: string;
+    guild_id?: string;
+}
+
+export interface GatewayMessageReactionRemoveEmojiData {
+    channel_id: string;
+    message_id: string;
+    guild_id?: string;
+    emoji: APIReactionEmoji;
+}
+
+export interface GatewayTypingStartData {
+    channel_id: string;
+    guild_id?: string;
+    user_id: string;
+    /** Unix seconds. */
+    timestamp: number;
+    /** Guild channels only. */
+    member?: APIGuildMember;
+}
+
+export interface GatewayMessagePollVoteData {
+    user_id: string;
+    channel_id: string;
+    message_id: string;
+    guild_id?: string;
+    answer_id: number;
+}
+
 /** Body of every dispatch the library handles, keyed by the payload's `t`. */
 export interface GatewayDispatchData {
     GUILD_CREATE: GatewayGuildCreateData;
@@ -144,5 +216,16 @@ export interface GatewayDispatchData {
     THREAD_LIST_SYNC: GatewayThreadListSyncData;
     THREAD_MEMBER_UPDATE: GatewayThreadMemberUpdateData;
     THREAD_MEMBERS_UPDATE: GatewayThreadMembersUpdateData;
+    MESSAGE_CREATE: GatewayMessageCreateData;
+    MESSAGE_UPDATE: GatewayMessageCreateData;
+    MESSAGE_DELETE: GatewayMessageDeleteData;
+    MESSAGE_DELETE_BULK: GatewayMessageDeleteBulkData;
+    MESSAGE_REACTION_ADD: GatewayMessageReactionAddData;
+    MESSAGE_REACTION_REMOVE: GatewayMessageReactionRemoveData;
+    MESSAGE_REACTION_REMOVE_ALL: GatewayMessageReactionRemoveAllData;
+    MESSAGE_REACTION_REMOVE_EMOJI: GatewayMessageReactionRemoveEmojiData;
+    MESSAGE_POLL_VOTE_ADD: GatewayMessagePollVoteData;
+    MESSAGE_POLL_VOTE_REMOVE: GatewayMessagePollVoteData;
+    TYPING_START: GatewayTypingStartData;
     INTERACTION_CREATE: APIInteraction;
 }

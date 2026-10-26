@@ -1,5 +1,7 @@
 import type { ChannelTypes } from '../../../constants';
 import type { APIChannel, ClientContext } from '../../../types';
+import type { Cache } from '../../cache';
+import type { Message } from '../message';
 import { parseTimestamp } from '../util';
 import { GuildChannel } from './guildChannel';
 
@@ -19,6 +21,13 @@ export abstract class BaseGuildVoiceChannel extends GuildChannel {
     lastPinTimestamp: number | null = null;
     /** Slowmode, in seconds. */
     rateLimitPerUser = 0;
+    /** Cached messages from the built-in text chat, filled as they are sent, edited or fetched. */
+    readonly messages: Cache<string, Message>;
+
+    constructor(client: ClientContext, data: APIChannel, guildId: string) {
+        super(client, data, guildId);
+        this.messages = client.cache.create('messages');
+    }
 
     override patch(data: Partial<APIChannel>): void {
         super.patch(data);

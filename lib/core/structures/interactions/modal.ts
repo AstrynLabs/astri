@@ -1,8 +1,9 @@
 import { InteractionCallbackTypes, type InteractionTypes } from '../../../constants';
-import type { APIInteraction, APIMessage, APIModalSubmitComponent, APIModalSubmitInteractionData, ClientContext, InteractionUpdateData } from '../../../types';
+import type { APIInteraction, APIModalSubmitComponent, APIModalSubmitInteractionData, ClientContext, InteractionUpdateData } from '../../../types';
+import { upsertMessage, type Message } from '../message';
+import { splitFiles } from '../util';
 import { RepliableInteraction } from './interaction';
 import { InteractionResolved } from './resolved';
-import { editBody } from './util';
 
 /** A modal opened with `showModal` was submitted. */
 export class ModalSubmitInteraction extends RepliableInteraction {
@@ -15,7 +16,7 @@ export class ModalSubmitInteraction extends RepliableInteraction {
     /** What the modal's user, role, mentionable and channel selects and file uploads point to. */
     readonly resolved: InteractionResolved;
     /** The message of the component that opened the modal, or `null` when a command opened it. */
-    readonly message: APIMessage | null;
+    readonly message: Message | null;
 
     constructor(client: ClientContext, data: APIInteraction) {
         super(client, data);
@@ -23,7 +24,7 @@ export class ModalSubmitInteraction extends RepliableInteraction {
         this.customId = modal.custom_id;
         this.components = modal.components;
         this.resolved = new InteractionResolved(client, modal.resolved, this.guildId);
-        this.message = data.message ?? null;
+        this.message = data.message === undefined ? null : upsertMessage(client, data.message, this.guildId);
         collectFields(this.components, this.fields);
     }
 
@@ -45,7 +46,7 @@ export class ModalSubmitInteraction extends RepliableInteraction {
 
     /** Only when a component opened the modal: responds by editing its message. */
     update(data: string | InteractionUpdateData): Promise<void> {
-        const [body, files] = editBody(data);
+        const [body, files] = splitFiles(data);
         return this.sendCallback({ type: InteractionCallbackTypes.UpdateMessage, data: body }, files);
     }
 }

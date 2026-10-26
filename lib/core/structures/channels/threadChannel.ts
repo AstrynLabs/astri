@@ -2,6 +2,7 @@ import type { ChannelTypes } from '../../../constants';
 import type { APIChannel, APIThreadMember, ClientContext } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Guild } from '../guild';
+import type { Message } from '../message';
 import { ThreadMember } from '../threadMember';
 import { parseTimestamp } from '../util';
 import { Channel } from './channel';
@@ -40,11 +41,14 @@ export abstract class ThreadChannel extends Channel {
     member: ThreadMember | null = null;
     /** Cached members. Others than the client only arrive through `THREAD_MEMBERS_UPDATE`, which needs the guild members intent. */
     readonly members: Cache<string, ThreadMember>;
+    /** Cached messages, filled as they are sent, edited or fetched. */
+    readonly messages: Cache<string, Message>;
 
     constructor(client: ClientContext, data: APIChannel, guildId: string) {
         super(client, data);
         this.guildId = guildId;
         this.members = client.cache.create('threadMembers');
+        this.messages = client.cache.create('messages');
     }
 
     /** The guild this thread belongs to, if cached. */

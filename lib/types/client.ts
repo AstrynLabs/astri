@@ -1,6 +1,8 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
-import type { AnyInteraction, Channel, Emoji, Guild, Member, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
+import type { AnyInteraction, Channel, Emoji, Guild, Member, Message, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
+import type { MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
+import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
 import type { GatewayDispatchData } from './discord';
@@ -28,6 +30,8 @@ export interface ClientCaches {
     channels: Channel;
     threads: ThreadChannel;
     threadMembers: ThreadMember;
+    /** One cache per text-based channel. Unbounded by default like every kind, so consider a `maxSize`. */
+    messages: Message;
 }
 
 export interface ClientEvents {
@@ -90,6 +94,27 @@ export interface ClientEvents {
     threadMemberUpdate: [member: ThreadMember, thread: ThreadChannel | null];
     /** Users were added to or removed from a thread. Other users than the client need the guild members intent. */
     threadMembersUpdate: [threadId: string, guildId: string, added: ThreadMember[], removedIds: string[], thread: ThreadChannel | null];
+    /** Content, embeds, attachments, components and polls are empty without the message content intent, except in DMs, the client's own messages, and messages that mention it. */
+    messageCreate: [message: Message];
+    /** `old` is a shallow copy from before the update, or `null` if the message was not cached. */
+    messageUpdate: [message: Message, old: Message | null];
+    /** `message` is the cached instance, or `null` if it was not cached. */
+    messageDelete: [id: string, channelId: string, guildId: string | null, message: Message | null];
+    /** `messages` holds the deleted ones that were cached. */
+    messageDeleteBulk: [ids: string[], channelId: string, guildId: string | null, messages: Message[]];
+    /** `member` is sent for guild reactions. */
+    messageReactionAdd: [reaction: MessageReactionAddEvent, message: Message | null, member: Member | null];
+    messageReactionRemove: [reaction: MessageReactionEvent, message: Message | null];
+    /** `removed` holds the reactions the cached message had, and is empty if it was not cached. */
+    messageReactionRemoveAll: [messageId: string, channelId: string, guildId: string | null, message: Message | null, removed: MessageReaction[]];
+    /** `removed` is the reaction the cached message had, or `null`. */
+    messageReactionRemoveEmoji: [emoji: ReactionEmoji, messageId: string, channelId: string, guildId: string | null, message: Message | null, removed: MessageReaction | null];
+    /** A user voted for a poll answer. */
+    messagePollVoteAdd: [userId: string, answerId: number, messageId: string, channelId: string, guildId: string | null, message: Message | null];
+    /** A user took back their vote for a poll answer. */
+    messagePollVoteRemove: [userId: string, answerId: number, messageId: string, channelId: string, guildId: string | null, message: Message | null];
+    /** A user started typing. `startedAt` is Unix ms, and `member` is sent in guilds. */
+    typingStart: [userId: string, channelId: string, guildId: string | null, startedAt: number, member: Member | null, channel: TextBasedChannel | null];
     /** A command, component, autocomplete or modal submission needs a response within 3 seconds. Narrow with `instanceof`. */
     interactionCreate: [interaction: AnyInteraction];
 }

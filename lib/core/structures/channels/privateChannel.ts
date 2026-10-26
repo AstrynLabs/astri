@@ -1,5 +1,7 @@
 import type { ChannelTypes } from '../../../constants';
 import type { APIChannel, ClientContext } from '../../../types';
+import type { Cache } from '../../cache';
+import type { Message } from '../message';
 import { upsertUser, type User } from '../user';
 import { parseTimestamp } from '../util';
 import { Channel } from './channel';
@@ -11,6 +13,13 @@ export abstract class PrivateChannel extends Channel {
     lastMessageId: string | null = null;
     /** Unix ms of the latest pin, or `null`. */
     lastPinTimestamp: number | null = null;
+    /** Cached messages, filled as they are sent, edited or fetched. */
+    readonly messages: Cache<string, Message>;
+
+    constructor(client: ClientContext, data: APIChannel) {
+        super(client, data);
+        this.messages = client.cache.create('messages');
+    }
 
     override patch(data: Partial<APIChannel>): void {
         super.patch(data);

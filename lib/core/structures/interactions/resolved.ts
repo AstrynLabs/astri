@@ -1,10 +1,12 @@
 import type { Attachment } from '../../../interfaces';
-import type { APIInteractionResolvedData, APIMessage, ClientContext } from '../../../types';
+import type { APIInteractionResolvedData, ClientContext } from '../../../types';
 import type { Channel } from '../channels';
 import { upsertMember, type Member } from '../member';
+import { upsertMessage, type Message } from '../message';
 import { Role } from '../role';
 import { upsertUser, type User } from '../user';
-import { resolveChannel, toAttachment } from './util';
+import { toAttachment } from '../util';
+import { resolveChannel } from './util';
 
 /**
  * What an interaction's options or select menu values point to, keyed by id.
@@ -20,7 +22,7 @@ export class InteractionResolved {
     readonly roles = new Map<string, Role>();
     readonly channels = new Map<string, Channel>();
     /** Message commands only. */
-    readonly messages = new Map<string, APIMessage>();
+    readonly messages = new Map<string, Message>();
     readonly attachments = new Map<string, Attachment>();
 
     constructor(client: ClientContext, data: APIInteractionResolvedData | undefined, guildId: string | null) {
@@ -39,7 +41,7 @@ export class InteractionResolved {
             }
         }
         for (const [id, channel] of Object.entries(data.channels ?? {})) this.channels.set(id, resolveChannel(client, channel, guildId));
-        for (const [id, message] of Object.entries(data.messages ?? {})) this.messages.set(id, message);
+        for (const [id, message] of Object.entries(data.messages ?? {})) this.messages.set(id, upsertMessage(client, message, guildId));
         for (const [id, attachment] of Object.entries(data.attachments ?? {})) this.attachments.set(id, toAttachment(attachment));
     }
 }

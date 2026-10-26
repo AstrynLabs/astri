@@ -1,8 +1,9 @@
 import { InteractionCallbackTypes, type ComponentTypes, type InteractionTypes } from '../../../constants';
-import type { APIInteraction, APIMessage, APIMessageComponentInteractionData, ClientContext, InteractionModalData, InteractionUpdateData } from '../../../types';
+import type { APIInteraction, APIMessageComponentInteractionData, ClientContext, InteractionModalData, InteractionUpdateData } from '../../../types';
+import { upsertMessage, type Message } from '../message';
+import { splitFiles } from '../util';
 import { RepliableInteraction } from './interaction';
 import { InteractionResolved } from './resolved';
-import { editBody } from './util';
 
 /** A button was clicked or a select menu was submitted. */
 export class ComponentInteraction extends RepliableInteraction {
@@ -14,7 +15,7 @@ export class ComponentInteraction extends RepliableInteraction {
     /** User, role, mentionable and channel selects only. */
     readonly resolved: InteractionResolved;
     /** The message the component is on. */
-    readonly message: APIMessage;
+    readonly message: Message;
 
     constructor(client: ClientContext, data: APIInteraction) {
         super(client, data);
@@ -23,7 +24,7 @@ export class ComponentInteraction extends RepliableInteraction {
         this.componentType = component.component_type;
         this.values = component.values ?? [];
         this.resolved = new InteractionResolved(client, component.resolved, this.guildId);
-        this.message = data.message!;
+        this.message = upsertMessage(client, data.message!, this.guildId);
     }
 
     /** Acknowledges the interaction without a loading state, to edit the message later through {@link editReply}. */
@@ -34,7 +35,7 @@ export class ComponentInteraction extends RepliableInteraction {
 
     /** Responds by editing the message the component is on. */
     update(data: string | InteractionUpdateData): Promise<void> {
-        const [body, files] = editBody(data);
+        const [body, files] = splitFiles(data);
         return this.sendCallback({ type: InteractionCallbackTypes.UpdateMessage, data: body }, files);
     }
 

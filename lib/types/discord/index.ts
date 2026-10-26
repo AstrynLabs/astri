@@ -4,6 +4,7 @@ export * from './emoji';
 export * from './guild';
 export * from './interaction';
 export * from './member';
+export * from './message';
 export * from './role';
 export * from './user';
 export type { components as APIComponents, operations as APIOperations, paths as APIPaths } from './openapi';

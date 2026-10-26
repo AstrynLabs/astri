@@ -1,6 +1,7 @@
 import { InteractionCallbackTypes, type ApplicationCommandTypes, type InteractionTypes } from '../../../constants';
-import type { APIApplicationCommandInteractionData, APIInteraction, APIMessage, AutocompleteChoice, ClientContext, InteractionModalData } from '../../../types';
+import type { APIApplicationCommandInteractionData, APIInteraction, AutocompleteChoice, ClientContext, InteractionModalData } from '../../../types';
 import type { Member } from '../member';
+import type { Message } from '../message';
 import type { User } from '../user';
 import { Interaction, RepliableInteraction } from './interaction';
 import { CommandOptions } from './options';
@@ -66,7 +67,7 @@ export class UserCommandInteraction extends CommandInteraction {
 export class MessageCommandInteraction extends CommandInteraction {
     declare readonly commandType: typeof ApplicationCommandTypes.Message;
     readonly targetId: string;
-    readonly targetMessage: APIMessage;
+    readonly targetMessage: Message;
 
     constructor(client: ClientContext, data: APIInteraction) {
         super(client, data);

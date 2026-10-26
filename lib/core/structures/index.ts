@@ -4,6 +4,7 @@ export * from './emoji';
 export * from './guild';
 export * from './interactions';
 export * from './member';
+export * from './message';
 export * from './role';
 export * from './threadMember';
 export * from './user';

@@ -17,12 +17,23 @@ import { guildRoleDelete } from './guildRoleDelete';
 import { guildRoleUpdate } from './guildRoleUpdate';
 import { guildUpdate } from './guildUpdate';
 import { interactionCreate } from './interactionCreate';
+import { messageCreate } from './messageCreate';
+import { messageDelete } from './messageDelete';
+import { messageDeleteBulk } from './messageDeleteBulk';
+import { messagePollVoteAdd } from './messagePollVoteAdd';
+import { messagePollVoteRemove } from './messagePollVoteRemove';
+import { messageReactionAdd } from './messageReactionAdd';
+import { messageReactionRemove } from './messageReactionRemove';
+import { messageReactionRemoveAll } from './messageReactionRemoveAll';
+import { messageReactionRemoveEmoji } from './messageReactionRemoveEmoji';
+import { messageUpdate } from './messageUpdate';
 import { threadCreate } from './threadCreate';
 import { threadDelete } from './threadDelete';
 import { threadListSync } from './threadListSync';
 import { threadMembersUpdate } from './threadMembersUpdate';
 import { threadMemberUpdate } from './threadMemberUpdate';
 import { threadUpdate } from './threadUpdate';
+import { typingStart } from './typingStart';
 
 /** The handler for each dispatch the library acts on, keyed by the payload's `t`. */
 export const dispatchHandlers: DispatchHandlers = {
@@ -48,6 +59,17 @@ export const dispatchHandlers: DispatchHandlers = {
     THREAD_LIST_SYNC: threadListSync,
     THREAD_MEMBER_UPDATE: threadMemberUpdate,
     THREAD_MEMBERS_UPDATE: threadMembersUpdate,
+    MESSAGE_CREATE: messageCreate,
+    MESSAGE_UPDATE: messageUpdate,
+    MESSAGE_DELETE: messageDelete,
+    MESSAGE_DELETE_BULK: messageDeleteBulk,
+    MESSAGE_REACTION_ADD: messageReactionAdd,
+    MESSAGE_REACTION_REMOVE: messageReactionRemove,
+    MESSAGE_REACTION_REMOVE_ALL: messageReactionRemoveAll,
+    MESSAGE_REACTION_REMOVE_EMOJI: messageReactionRemoveEmoji,
+    MESSAGE_POLL_VOTE_ADD: messagePollVoteAdd,
+    MESSAGE_POLL_VOTE_REMOVE: messagePollVoteRemove,
+    TYPING_START: typingStart,
     INTERACTION_CREATE: interactionCreate
 };
 

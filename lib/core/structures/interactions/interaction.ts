@@ -4,8 +4,10 @@ import { Base } from '../base';
 import type { Channel } from '../channels';
 import type { Guild } from '../guild';
 import { upsertMember, type Member } from '../member';
+import { upsertMessage, type Message } from '../message';
 import { upsertUser, type User } from '../user';
-import { editBody, messageBody, resolveChannel } from './util';
+import { splitFiles } from '../util';
+import { messageBody, resolveChannel } from './util';
 
 type InteractionCallbackBody = RESTBody<'/interactions/{interaction_id}/{interaction_token}/callback', 'post'>;
 
@@ -104,14 +106,14 @@ export abstract class RepliableInteraction extends Interaction {
     }
 
     /** The initial response message. */
-    async fetchReply(): Promise<APIMessage> {
-        return this.client.rest.get('webhookTokenOriginalMessage', this.applicationId, this.token) as Promise<APIMessage>;
+    async fetchReply(): Promise<Message> {
+        return upsertMessage(this.client, await this.client.rest.get('webhookTokenOriginalMessage', this.applicationId, this.token), this.guildId);
     }
 
     /** Edits the initial response, or sends it after a {@link defer}. */
-    async editReply(data: string | InteractionEditData): Promise<APIMessage> {
-        const [body, files] = editBody(data);
-        return this.client.rest.patch('webhookTokenOriginalMessage', this.applicationId, this.token, body, { files });
+    async editReply(data: string | InteractionEditData): Promise<Message> {
+        const [body, files] = splitFiles(data);
+        return upsertMessage(this.client, await this.client.rest.patch('webhookTokenOriginalMessage', this.applicationId, this.token, body, { files }), this.guildId);
     }
 
     async deleteReply(): Promise<void> {
@@ -119,14 +121,15 @@ export abstract class RepliableInteraction extends Interaction {
     }
 
     /** Sends another message. Needs the initial response to have been sent. */
-    async followUp(data: string | InteractionMessageData): Promise<APIMessage> {
+    async followUp(data: string | InteractionMessageData): Promise<Message> {
         const [body, files] = messageBody(data);
-        return this.client.rest.post('webhookToken', this.applicationId, this.token, body, { files, query: { wait: true } }) as Promise<APIMessage>;
+        const sent = (await this.client.rest.post('webhookToken', this.applicationId, this.token, body, { files, query: { wait: true } })) as APIMessage;
+        return upsertMessage(this.client, sent, this.guildId);
     }
 
-    async editFollowUp(messageId: string, data: string | InteractionEditData): Promise<APIMessage> {
-        const [body, files] = editBody(data);
-        return this.client.rest.patch('webhookTokenMessage', this.applicationId, this.token, messageId, body, { files });
+    async editFollowUp(messageId: string, data: string | InteractionEditData): Promise<Message> {
+        const [body, files] = splitFiles(data);
+        return upsertMessage(this.client, await this.client.rest.patch('webhookTokenMessage', this.applicationId, this.token, messageId, body, { files }), this.guildId);
     }
 
     async deleteFollowUp(messageId: string): Promise<void> {
