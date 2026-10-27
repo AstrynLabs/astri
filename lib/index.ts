@@ -5,6 +5,7 @@ export const VERSION = pkg.version;
 export * from './builders';
 export * from './constants';
 export * from './core/client';
+export * from './core/commands';
 export * from './core/rest';
 export * from './core/cache';
 export * from './core/structures';

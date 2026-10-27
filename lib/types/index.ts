@@ -5,6 +5,7 @@ export * from './autoModeration';
 export * from './cache';
 export * from './channel';
 export * from './client';
+export * from './commands';
 export * from './discord';
 export * from './entitlement';
 export * from './gateway';

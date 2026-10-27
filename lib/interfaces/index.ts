@@ -3,6 +3,7 @@ export * from './applicationCommand';
 export * from './auditLog';
 export * from './autoModeration';
 export * from './channel';
+export * from './commands';
 export * from './embed';
 export * from './guild';
 export * from './integration';

@@ -1,10 +1,12 @@
 import type { Cache, CacheManager } from '../core/cache';
+import type { Command, EventHandler } from '../core/commands';
 import type { RequestHandler } from '../core/rest';
 import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, ExtendedUser, Guild, GuildAuditLogEntry, GuildIntegration, GuildScheduledEvent, Invite, Member, Message, Presence, Role, SoundboardSound, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
 import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji, Subscription, VoiceChannelEffect } from '../interfaces';
 import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
+import type { CommandErrorData, CommandHandlerInteraction } from './commands';
 import type { GatewayDispatchData } from './discord';
 import type { GatewayDispatchPayload, GatewayReadyData, ShardOptions } from './gateway';
 import type { RESTOptions, RESTRateLimitInfo } from './rest';
@@ -209,6 +211,12 @@ export interface ClientEvents {
     subscriptionDelete: [subscription: Subscription];
     /** Discord dropped a gateway send for being sent too often. `retryAfter` is in ms. A matching guild members request is rejected. */
     gatewayRateLimit: [opcode: number, retryAfter: number, guildId: string, nonce: string | null, shard: Shard];
+    /** `CommandClient` only: a command handler finished without throwing. */
+    commandExecuted: [command: Command<any, any, any>, interaction: CommandHandlerInteraction];
+    /** `CommandClient` only: a command was refused by one of its limits, or its middleware or handler threw. Narrow with `error.type`. */
+    commandError: [command: Command<any, any, any>, interaction: CommandHandlerInteraction, error: CommandErrorData];
+    /** `CommandClient` only: a registered event handler threw. */
+    eventError: [handler: EventHandler<any, any>, error: unknown];
 }
 
 /** What structures and dispatch handlers need from the client. */
