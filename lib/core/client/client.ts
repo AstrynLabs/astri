@@ -1,11 +1,11 @@
 import { EventEmitter } from 'eventemitter3';
-import { IDENTIFY_WINDOW } from '../../constants';
-import type { GuildApplicationCommandPermissions } from '../../interfaces';
-import type { APIApplicationCommand, APIChannel, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions } from '../../types';
+import { IDENTIFY_WINDOW, MEMBER_REQUEST_TIMEOUT } from '../../constants';
+import type { GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest } from '../../interfaces';
+import type { APIApplicationCommand, APIChannel, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayPresenceUpdateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions, PresenceOptions, RequestGuildMembersOptions, VoiceStateOptions } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
 import { RequestHandler } from '../rest';
-import type { Channel, Entitlement, User } from '../structures';
+import type { Channel, Entitlement, Member, User } from '../structures';
 import { ApplicationCommand, Guild, upsertChannel, upsertUser } from '../structures';
 import { toCommandPermissions } from '../structures/util';
 import { handleDispatch, Shard } from '../ws';
@@ -36,6 +36,9 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     #generation = 0;
     #ready = false;
     #fetchingApplicationId: Promise<string> | null = null;
+    #presence: GatewayPresenceUpdateData | undefined;
+    readonly #memberRequests = new Map<string, PendingMemberRequest>();
+    #memberNonce = 0;
 
     constructor(options: ClientOptions) {
         super();
@@ -46,6 +49,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         this.#shardCount = shards ?? null;
         this.#maxConcurrency = maxConcurrency ?? 1;
         this.#gatewayURL = options.gatewayURL;
+        this.#presence = options.presence;
         this.cache = new CacheManager(options.cache);
         this.guilds = this.cache.create('guilds');
         this.users = this.cache.create('users');
@@ -109,6 +113,11 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         for (const shard of this.shards.values()) shard.disconnect();
         this.#readyShards.clear();
         this.#ready = false;
+        for (const [nonce, request] of this.#memberRequests) {
+            clearTimeout(request.timer);
+            this.#memberRequests.delete(nonce);
+            request.reject(new Error('Client disconnected before the guild members request finished'));
+        }
     }
 
     /** Disconnects and stops the cache sweep timer. The client should not be reused afterwards. */
@@ -117,6 +126,88 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         this.cache.destroy();
         this.rest.removeAllListeners();
         this.removeAllListeners();
+    }
+
+    /**
+     * The shard a guild's events arrive on.
+     *
+     * @throws When that shard has not been created, because `connect()` has not run yet.
+     */
+    shardFor(guildId: string): Shard {
+        const id = this.#shardCount === null ? 0 : Number((BigInt(guildId) >> 22n) % BigInt(this.#shardCount));
+        const shard = this.shards.get(id);
+        if (shard === undefined) throw new Error(`Shard ${id} for guild ${guildId} has not been created, call connect() first`);
+        return shard;
+    }
+
+    /**
+     * Changes the client's presence on every shard. Fields left out keep their last value, and shards that connect
+     * later identify with it.
+     */
+    setPresence(presence: PresenceOptions): void {
+        const current = this.#presence;
+        this.#presence = {
+            since: presence.since !== undefined ? presence.since : (current?.since ?? null),
+            activities: presence.activities ?? current?.activities ?? [],
+            status: presence.status ?? current?.status ?? 'online',
+            afk: presence.afk ?? current?.afk ?? false
+        };
+        for (const shard of this.shards.values()) shard.updatePresence(this.#presence);
+    }
+
+    /**
+     * Joins or moves the client to a voice channel in a guild, or leaves voice with `channelId: null`. Only the
+     * gateway state changes; there is no voice connection to send or receive audio.
+     *
+     * @throws When the guild's shard is not ready.
+     */
+    updateVoiceState(guildId: string, channelId: string | null, options: VoiceStateOptions = {}): void {
+        this.shardFor(guildId).updateVoiceState({ guild_id: guildId, channel_id: channelId, self_mute: options.selfMute ?? false, self_deaf: options.selfDeaf ?? false });
+    }
+
+    /**
+     * Requests members over the gateway and resolves once every chunk has arrived. They are cached as they come in.
+     * Prefer this over REST to load a large guild's whole member list.
+     *
+     * Rejects when the guild's shard is not ready, when a chunk takes longer than `timeout`, or when the client
+     * disconnects first.
+     */
+    requestGuildMembers(guildId: string, options: RequestGuildMembersOptions = {}): Promise<Member[]> {
+        const { userIds, presences, timeout = MEMBER_REQUEST_TIMEOUT } = options;
+        const nonce = `${Date.now().toString(36)}${(this.#memberNonce++).toString(36)}`;
+        return new Promise<Member[]>((resolve, reject) => {
+            const timer = setTimeout(() => this.#expireMemberRequest(nonce, guildId), timeout);
+            this.#memberRequests.set(nonce, { members: [], timeout, timer, resolve, reject });
+            try {
+                this.shardFor(guildId).requestGuildMembers({
+                    guild_id: guildId,
+                    query: userIds === undefined ? (options.query ?? '') : undefined,
+                    limit: options.limit ?? 0,
+                    presences,
+                    user_ids: userIds,
+                    nonce
+                });
+            } catch (error) {
+                clearTimeout(timer);
+                this.#memberRequests.delete(nonce);
+                reject(error as Error);
+            }
+        });
+    }
+
+    /** Hands a members chunk to the `requestGuildMembers` call waiting on its nonce, if there is one. */
+    settleMemberRequest(chunk: GuildMembersChunk): void {
+        if (chunk.nonce === null) return;
+        const request = this.#memberRequests.get(chunk.nonce);
+        if (request === undefined) return;
+        request.members.push(...chunk.members);
+        clearTimeout(request.timer);
+        if (chunk.chunkIndex + 1 >= chunk.chunkCount) {
+            this.#memberRequests.delete(chunk.nonce);
+            request.resolve(request.members);
+            return;
+        }
+        request.timer = setTimeout(() => this.#expireMemberRequest(chunk.nonce as string, chunk.guildId), request.timeout);
     }
 
     /** Fetches a user, cached or not, and caches it. */
@@ -210,6 +301,13 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         return this.#fetchingApplicationId;
     }
 
+    #expireMemberRequest(nonce: string, guildId: string): void {
+        const request = this.#memberRequests.get(nonce);
+        if (request === undefined) return;
+        this.#memberRequests.delete(nonce);
+        request.reject(new Error(`Timed out waiting for members of guild ${guildId} after ${request.members.length} were received`));
+    }
+
     async #fetchSharding(): Promise<void> {
         const gateway = await this.rest.get('gatewayBot');
         const { max_concurrency, remaining, reset_after } = gateway.session_start_limit;
@@ -221,8 +319,8 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     }
 
     #createShard(id: number): Shard {
-        const { token, intents, compress, largeThreshold, presence, autoReconnect } = this.#options;
-        const shard = new Shard(id, { token, intents, total: this.#shardCount as number, gatewayURL: this.#gatewayURL, compress, largeThreshold, presence, autoReconnect });
+        const { token, intents, compress, largeThreshold, autoReconnect } = this.#options;
+        const shard = new Shard(id, { token, intents, total: this.#shardCount as number, gatewayURL: this.#gatewayURL, compress, largeThreshold, presence: this.#presence, autoReconnect });
         shard.on('ready', (data) => this.#onShardReady(shard, data));
         shard.on('resumed', () => this.emit('shardResume', shard));
         shard.on('disconnect', (code, reason) => this.emit('shardDisconnect', shard, code, reason));

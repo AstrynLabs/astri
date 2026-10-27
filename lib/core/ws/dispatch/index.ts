@@ -19,6 +19,7 @@ import { guildDelete } from './guildDelete';
 import { guildEmojisUpdate } from './guildEmojisUpdate';
 import { guildMemberAdd } from './guildMemberAdd';
 import { guildMemberRemove } from './guildMemberRemove';
+import { guildMembersChunk } from './guildMembersChunk';
 import { guildMemberUpdate } from './guildMemberUpdate';
 import { guildRoleCreate } from './guildRoleCreate';
 import { guildRoleDelete } from './guildRoleDelete';
@@ -68,6 +69,7 @@ export const dispatchHandlers: DispatchHandlers = {
     GUILD_MEMBER_ADD: guildMemberAdd,
     GUILD_MEMBER_UPDATE: guildMemberUpdate,
     GUILD_MEMBER_REMOVE: guildMemberRemove,
+    GUILD_MEMBERS_CHUNK: guildMembersChunk,
     GUILD_BAN_ADD: guildBanAdd,
     GUILD_BAN_REMOVE: guildBanRemove,
     GUILD_EMOJIS_UPDATE: guildEmojisUpdate,

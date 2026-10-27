@@ -1,7 +1,7 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
 import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, Guild, GuildScheduledEvent, Invite, Member, Message, Presence, Role, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
-import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
+import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
 import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
@@ -80,6 +80,8 @@ export interface ClientEvents {
     guildMemberAdd: [member: Member];
     guildMemberUpdate: [member: Member, old: Member | null];
     guildMemberRemove: [user: User, guildId: string, member: Member | null];
+    /** A chunk of members arrived in reply to a guild members request. The members and presences are already cached. */
+    guildMembersChunk: [chunk: GuildMembersChunk];
     guildBanAdd: [user: User, guildId: string];
     guildBanRemove: [user: User, guildId: string];
     /** `emojis` is the guild's full emoji list after the update. `old` is `null` if the guild was not cached. */
@@ -187,6 +189,8 @@ export interface ClientContext {
     /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
     readonly unavailableGuilds: Set<string>;
     emit<Event extends keyof ClientEvents>(event: Event, ...args: ClientEvents[Event]): boolean;
+    /** Hands a members chunk to the `requestGuildMembers` call waiting on its nonce, if there is one. */
+    settleMemberRequest(chunk: GuildMembersChunk): void;
 }
 
 /** Updates the client's state for one dispatch event and emits the matching client event. */

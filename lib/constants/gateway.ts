@@ -7,6 +7,9 @@ export const DEFAULT_GATEWAY_URL = 'wss://gateway.discord.gg';
 /** Length in ms of the window in which up to `max_concurrency` shards may identify. */
 export const IDENTIFY_WINDOW = 5_000;
 
+/** Default ms a guild members request waits for its next chunk before giving up. */
+export const MEMBER_REQUEST_TIMEOUT = 15_000;
+
 /** Gateway payload opcodes. */
 export const GatewayOpcodes = {
     Dispatch: 0,

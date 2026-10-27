@@ -261,6 +261,18 @@ export interface GatewayAutoModerationActionExecutionData {
     matched_content: string | null;
 }
 
+export interface GatewayGuildMembersChunkData {
+    guild_id: string;
+    members: APIGuildMember[];
+    chunk_index: number;
+    chunk_count: number;
+    /** Requested user ids that are not members. */
+    not_found?: string[];
+    /** Sent when the request asked for presences. */
+    presences?: APIPresence[];
+    nonce?: string;
+}
+
 /** Body of every dispatch the library handles, keyed by the payload's `t`. */
 export interface GatewayDispatchData {
     GUILD_CREATE: GatewayGuildCreateData;
@@ -272,6 +284,7 @@ export interface GatewayDispatchData {
     GUILD_MEMBER_ADD: GatewayGuildMemberAddData;
     GUILD_MEMBER_UPDATE: GatewayGuildMemberUpdateData;
     GUILD_MEMBER_REMOVE: GatewayGuildMemberRemoveData;
+    GUILD_MEMBERS_CHUNK: GatewayGuildMembersChunkData;
     GUILD_BAN_ADD: GatewayGuildBanData;
     GUILD_BAN_REMOVE: GatewayGuildBanData;
     GUILD_EMOJIS_UPDATE: GatewayGuildEmojisUpdateData;

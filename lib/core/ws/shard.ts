@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3';
 import { DEFAULT_GATEWAY_URL, GatewayCloseCodes, GatewayOpcodes } from '../../constants';
-import type { GatewayReadyData, GatewayReceivePayload, GatewaySendPayload, ShardEvents, ShardOptions, ShardStatus } from '../../types';
+import type { GatewayPresenceUpdateData, GatewayReadyData, GatewayReceivePayload, GatewayRequestGuildMembersData, GatewaySendPayload, GatewayVoiceStateUpdateData, ShardEvents, ShardOptions, ShardStatus } from '../../types';
 import { Connection } from './connection';
 
 const FATAL_CLOSE_CODES = new Set<number>([GatewayCloseCodes.AuthenticationFailed, GatewayCloseCodes.InvalidShard, GatewayCloseCodes.ShardingRequired, GatewayCloseCodes.InvalidAPIVersion, GatewayCloseCodes.InvalidIntents, GatewayCloseCodes.DisallowedIntents]);
@@ -90,9 +90,41 @@ export class Shard extends EventEmitter<ShardEvents> {
         this.emit('disconnect', 1000, 'Disconnect');
     }
 
-    /** Sends a raw payload, such as a presence update or a guild members request. */
+    /**
+     * Sends a raw payload. Anything sent before the shard is `ready` is flushed as soon as the socket opens, ahead
+     * of the identify, which Discord rejects; prefer the typed sends below.
+     */
     send(payload: GatewaySendPayload): void {
         this.#connection.send(payload);
+    }
+
+    /** Sets the presence on this shard. It is kept for later identifies, and sent right away only while `ready`. */
+    updatePresence(presence: GatewayPresenceUpdateData): void {
+        this.#options.presence = presence;
+        if (this.#status === 'ready') this.send({ op: GatewayOpcodes.PresenceUpdate, d: presence });
+    }
+
+    /**
+     * Joins, moves between or leaves a voice channel in a guild on this shard.
+     *
+     * @throws When the shard is not `ready`.
+     */
+    updateVoiceState(data: GatewayVoiceStateUpdateData): void {
+        this.#sendReady({ op: GatewayOpcodes.VoiceStateUpdate, d: data });
+    }
+
+    /**
+     * Asks for members of a guild on this shard. They arrive as `GUILD_MEMBERS_CHUNK` dispatches.
+     *
+     * @throws When the shard is not `ready`.
+     */
+    requestGuildMembers(data: GatewayRequestGuildMembersData): void {
+        this.#sendReady({ op: GatewayOpcodes.RequestGuildMembers, d: data });
+    }
+
+    #sendReady(payload: GatewaySendPayload): void {
+        if (this.#status !== 'ready') throw new Error(`Shard ${this.id} is not ready (status: ${this.#status})`);
+        this.send(payload);
     }
 
     #open(): void {

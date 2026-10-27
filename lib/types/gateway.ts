@@ -58,6 +58,58 @@ export interface GatewayPresenceUpdateData {
     afk: boolean;
 }
 
+/** Body of a request guild members send (opcode 8). Exactly one of `query` and `user_ids` is set. */
+export interface GatewayRequestGuildMembersData {
+    guild_id: string;
+    query?: string;
+    limit: number;
+    presences?: boolean;
+    user_ids?: string[];
+    nonce?: string;
+}
+
+/** Body of a voice state update send (opcode 4). `channel_id: null` leaves the voice channel. */
+export interface GatewayVoiceStateUpdateData {
+    guild_id: string;
+    channel_id: string | null;
+    self_mute: boolean;
+    self_deaf: boolean;
+}
+
+/** Changes to the client's presence. Fields left out keep their last value. */
+export interface PresenceOptions {
+    /** Default: `online`. */
+    status?: PresenceStatus;
+    activities?: GatewayActivity[];
+    afk?: boolean;
+    /** Unix ms the client went idle, or `null`. */
+    since?: number | null;
+}
+
+export interface VoiceStateOptions {
+    /** Default: `false`. */
+    selfMute?: boolean;
+    /** Default: `false`. */
+    selfDeaf?: boolean;
+}
+
+/**
+ * Which members to request. With `userIds`, up to 100 specific members are fetched. Otherwise members whose
+ * username starts with `query` are, and an empty `query` with `limit: 0` fetches every member, which needs the
+ * guild members intent.
+ */
+export interface RequestGuildMembersOptions {
+    /** Default: `''`. */
+    query?: string;
+    /** Default: `0`, no limit. Must be 1-100 with a non-empty `query`. */
+    limit?: number;
+    userIds?: string[];
+    /** Also send the members' presences. Needs the guild presences intent. Default: `false`. */
+    presences?: boolean;
+    /** Ms to wait for each chunk before rejecting. Default: `MEMBER_REQUEST_TIMEOUT`. */
+    timeout?: number;
+}
+
 export interface ConnectionOptions {
     /**
      * Receive payloads as a zlib stream. Cuts bandwidth substantially at a small CPU cost.
