@@ -37,3 +37,17 @@ export type APIApplicationCommandPermission = Schemas['CommandPermissionResponse
 
 /** Permission overrides for commands in one guild. `id` is the command id, or the application id when they apply to every command. */
 export type APIGuildApplicationCommandPermissions = Schemas['CommandPermissionsResponse'];
+
+type CommandCreateRequest = Schemas['ApplicationCommandCreateRequest'];
+
+/** Any option of a command as sent in a request. */
+export type APIApplicationCommandOptionRequest = NonNullable<CommandCreateRequest['options']>[number];
+export type APISubcommandOptionRequest = Schemas['ApplicationCommandSubcommandOption'];
+export type APISubcommandGroupOptionRequest = Schemas['ApplicationCommandSubcommandGroupOption'];
+/** An option that takes a value, as opposed to a subcommand or group. */
+export type APIValueOptionRequest = NonNullable<APISubcommandOptionRequest['options']>[number];
+export type APIStringOptionRequest = Schemas['ApplicationCommandStringOption'];
+export type APIIntegerOptionRequest = Schemas['ApplicationCommandIntegerOption'];
+export type APINumberOptionRequest = Schemas['ApplicationCommandNumberOption'];
+export type APIChannelOptionRequest = Schemas['ApplicationCommandChannelOption'];
+export type APIStringChoiceRequest = Schemas['ApplicationCommandOptionStringChoice'];

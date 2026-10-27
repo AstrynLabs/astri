@@ -3,6 +3,7 @@ export * from './applicationCommand';
 export * from './auditLog';
 export * from './autoModeration';
 export * from './channel';
+export * from './component';
 export * from './dispatch';
 export * from './emoji';
 export * from './entitlement';

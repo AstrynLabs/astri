@@ -96,7 +96,10 @@ export const ComponentTypes = {
     Separator: 14,
     Container: 17,
     Label: 18,
-    FileUpload: 19
+    FileUpload: 19,
+    RadioGroup: 21,
+    CheckboxGroup: 22,
+    Checkbox: 23
 } as const;
 export type ComponentTypes = (typeof ComponentTypes)[keyof typeof ComponentTypes];
 
@@ -518,3 +521,35 @@ export const GuildScheduledEventUserResponses = {
     NotInterested: 1
 } as const;
 export type GuildScheduledEventUserResponses = (typeof GuildScheduledEventUserResponses)[keyof typeof GuildScheduledEventUserResponses];
+
+/** Values of a button's `style`. */
+export const ButtonStyles = {
+    Primary: 1,
+    Secondary: 2,
+    Success: 3,
+    Danger: 4,
+    Link: 5,
+    Premium: 6
+} as const;
+export type ButtonStyles = (typeof ButtonStyles)[keyof typeof ButtonStyles];
+
+/** Values of a text input's `style`. */
+export const TextInputStyles = {
+    Short: 1,
+    Paragraph: 2
+} as const;
+export type TextInputStyles = (typeof TextInputStyles)[keyof typeof TextInputStyles];
+
+/** Where an application can be installed. */
+export const ApplicationIntegrationTypes = {
+    GuildInstall: 0,
+    UserInstall: 1
+} as const;
+export type ApplicationIntegrationTypes = (typeof ApplicationIntegrationTypes)[keyof typeof ApplicationIntegrationTypes];
+
+/** Values of a separator's `spacing`. */
+export const SeparatorSpacingSizes = {
+    Small: 1,
+    Large: 2
+} as const;
+export type SeparatorSpacingSizes = (typeof SeparatorSpacingSizes)[keyof typeof SeparatorSpacingSizes];
