@@ -1,9 +1,9 @@
 import type { ChannelTypes } from '../../../constants';
-import type { PinnedMessages } from '../../../interfaces';
-import type { APIChannel, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions, ThreadCreateData } from '../../../types';
+import type { PinnedMessages, ThreadList, ThreadSearchResult } from '../../../interfaces';
+import type { APIChannel, ArchivedThreadFetchOptions, ClientContext, JoinedArchivedThreadFetchOptions, MessageCreateData, MessageFetchOptions, PinFetchOptions, ThreadCreateData, ThreadSearchOptions } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Message } from '../message';
-import { bulkDeleteMessages, fetchMessage, fetchMessages, fetchPins, parseTimestamp, sendMessage } from '../util';
+import { bulkDeleteMessages, fetchArchivedThreads, fetchMessage, fetchMessages, fetchPins, parseTimestamp, searchThreads, sendMessage, toThreadList } from '../util';
 import { upsertThread } from './factory';
 import { GuildChannel } from './guildChannel';
 import type { ThreadChannel } from './threadChannel';
@@ -73,6 +73,30 @@ export abstract class BaseGuildTextChannel extends GuildChannel {
     /** Creates a thread not started from a message. Needs the create public or private threads permission. */
     async createThread(data: ThreadCreateData, reason?: string): Promise<ThreadChannel> {
         return upsertThread(this.client, (await this.client.rest.post('channelThreads', this.id, data, reason)) as APIChannel, this.guildId);
+    }
+
+    /** Fetches a page of archived public threads, most recently archived first. Needs the read message history permission. */
+    fetchPublicArchivedThreads(options?: ArchivedThreadFetchOptions): Promise<ThreadList> {
+        return fetchArchivedThreads(this.client, this.id, this.guildId, false, options);
+    }
+
+    /** Fetches a page of archived private threads, most recently archived first. Needs the read message history and manage threads permissions. */
+    fetchPrivateArchivedThreads(options?: ArchivedThreadFetchOptions): Promise<ThreadList> {
+        return fetchArchivedThreads(this.client, this.id, this.guildId, true, options);
+    }
+
+    /** Fetches a page of archived private threads the client joined, newest first. Needs the read message history permission. */
+    async fetchJoinedPrivateArchivedThreads(options?: JoinedArchivedThreadFetchOptions): Promise<ThreadList> {
+        return toThreadList(this.client, await this.client.rest.get('channelJoinedPrivateArchivedThreads', this.id, options), this.guildId);
+    }
+
+    /**
+     * Searches the channel's threads by name or tag.
+     *
+     * @throws When Discord is still indexing the channel.
+     */
+    searchThreads(options?: ThreadSearchOptions): Promise<ThreadSearchResult> {
+        return searchThreads(this.client, this.id, this.guildId, options);
     }
 }
 

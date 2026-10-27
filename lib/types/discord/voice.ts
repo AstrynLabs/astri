@@ -1,4 +1,5 @@
 import type { APIGuildMember } from './member';
+import type { components } from './openapi';
 
 /** A user's connection to a voice or stage channel. */
 export interface APIVoiceState {
@@ -24,3 +25,5 @@ export interface APIVoiceState {
     /** ISO 8601 timestamp the user asked to speak, or `null`. */
     request_to_speak_timestamp: string | null;
 }
+
+export type APIVoiceRegion = components['schemas']['VoiceRegionResponse'];

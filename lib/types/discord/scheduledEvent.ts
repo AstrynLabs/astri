@@ -31,3 +31,6 @@ export interface APIGuildScheduledEvent {
     image?: string | null;
     recurrence_rule: APIRecurrenceRule | null;
 }
+
+export type APIGuildScheduledEventUser = components['schemas']['ScheduledEventUserResponse'];
+export type APIGuildScheduledEventUserCounts = components['schemas']['ScheduledEventUserCountResponse'];

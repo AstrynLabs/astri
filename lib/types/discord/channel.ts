@@ -1,5 +1,6 @@
 import type { ChannelTypes } from '../../constants';
 import type { APIGuildMember } from './member';
+import type { components } from './openapi';
 import type { APIUser } from './user';
 
 export interface APIOverwrite {
@@ -103,3 +104,7 @@ export interface APIChannel {
     /** Forum and media threads only: ids of the parent's `available_tags` applied to the post. */
     applied_tags?: string[];
 }
+
+/** A page of threads with the client's own membership in each it joined. */
+export type APIThreadList = components['schemas']['ThreadsResponse'];
+export type APIThreadSearchResult = components['schemas']['ThreadSearchResponse'];

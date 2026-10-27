@@ -1,4 +1,5 @@
 import type { APIGuildEmoji } from './emoji';
+import type { components } from './openapi';
 import type { APIRole } from './role';
 import type { APISticker } from './sticker';
 import type { APIUser } from './user';
@@ -45,3 +46,11 @@ export interface APIUnavailableGuild {
     id: string;
     unavailable: true;
 }
+
+/** A guild as listed for the client's own user, with its permissions in it. */
+export type APIUserGuild = components['schemas']['MyGuildResponse'];
+export type APIGuildVanityURL = components['schemas']['VanityURLResponse'];
+export type APIGuildWelcomeScreen = components['schemas']['GuildWelcomeScreenResponse'];
+export type APIGuildWidgetSettings = components['schemas']['WidgetSettingsResponse'];
+export type APIGuildWidget = components['schemas']['WidgetResponse'];
+export type APIGuildOnboarding = components['schemas']['UserGuildOnboardingResponse'];

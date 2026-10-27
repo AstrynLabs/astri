@@ -1,3 +1,6 @@
+import type { GuildScheduledEventUserResponses } from '../constants';
+import type { Member, User } from '../core/structures';
+
 /** A weekday within a given week of the month, such as the second Tuesday. */
 export interface RecurrenceRuleNWeekday {
     /** `1` to `5`, where `5` is the last week. */
@@ -25,4 +28,23 @@ export interface RecurrenceRule {
     byYearDay: number[] | null;
     /** How many times the event may occur, or `null` for no limit. */
     count: number | null;
+}
+
+/** A user's answer to a scheduled event, or to one occurrence of a recurring event. */
+export interface GuildScheduledEventUser {
+    eventId: string;
+    /** The occurrence answered for, or `null` for the whole event. */
+    exceptionId: string | null;
+    userId: string;
+    user: User | null;
+    /** Only sent when requested, and only for users who are still members. */
+    member: Member | null;
+    response: GuildScheduledEventUserResponses;
+}
+
+export interface GuildScheduledEventUserCounts {
+    /** Users subscribed to the event. */
+    total: number;
+    /** Users subscribed to each requested occurrence, by exception id. */
+    exceptions: Record<string, number>;
 }

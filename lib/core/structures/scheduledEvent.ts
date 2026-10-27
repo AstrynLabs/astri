@@ -1,11 +1,11 @@
 import { GuildScheduledEventStatuses, type GuildScheduledEventPrivacyLevels } from '../../constants';
-import type { RecurrenceRule } from '../../interfaces';
-import type { APIGuildScheduledEvent, ClientContext, GuildScheduledEventEditData } from '../../types';
+import type { GuildScheduledEventUser, GuildScheduledEventUserCounts, RecurrenceRule } from '../../interfaces';
+import type { APIGuildScheduledEvent, ClientContext, GuildScheduledEventEditData, GuildScheduledEventUserFetchOptions } from '../../types';
 import { Base } from './base';
 import type { Channel } from './channels';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
-import { parseTimestamp, toRecurrenceRule } from './util';
+import { parseTimestamp, toRecurrenceRule, toScheduledEventUser, toScheduledEventUserCounts } from './util';
 
 /** An event scheduled in a guild, held in a stage or voice channel, or somewhere else. */
 export class GuildScheduledEvent extends Base {
@@ -95,6 +95,23 @@ export class GuildScheduledEvent extends Base {
     /** Cancels an event that has not started. */
     cancel(reason?: string): Promise<this> {
         return this.edit({ status: GuildScheduledEventStatuses.Canceled }, reason);
+    }
+
+    /** Fetches subscribers, in user id order, and caches their users and members. */
+    async fetchUsers(options?: GuildScheduledEventUserFetchOptions): Promise<GuildScheduledEventUser[]> {
+        const users = await this.client.rest.get('guildScheduledEventUsers', this.guildId, this.id, options);
+        return (users ?? []).map((user) => toScheduledEventUser(this.client, user, this.guildId));
+    }
+
+    /** Recurring events only: fetches subscribers of one occurrence, in user id order, and caches their users and members. */
+    async fetchExceptionUsers(exceptionId: string, options?: GuildScheduledEventUserFetchOptions): Promise<GuildScheduledEventUser[]> {
+        const users = await this.client.rest.get('guildScheduledEventExceptionUsers', this.guildId, this.id, exceptionId, options);
+        return (users ?? []).map((user) => toScheduledEventUser(this.client, user, this.guildId));
+    }
+
+    /** How many users subscribed to the event, and to each occurrence in `exceptionIds`. */
+    async fetchUserCounts(exceptionIds?: string[]): Promise<GuildScheduledEventUserCounts> {
+        return toScheduledEventUserCounts(await this.client.rest.get('guildScheduledEventUsersCounts', this.guildId, this.id, { guild_scheduled_event_exception_ids: exceptionIds }));
     }
 }
 

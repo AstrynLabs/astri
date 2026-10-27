@@ -1,3 +1,4 @@
+export * from './application';
 export * from './applicationCommand';
 export * from './auditLog';
 export * from './autoModeration';
@@ -9,6 +10,7 @@ export * from './invite';
 export * from './message';
 export * from './presence';
 export * from './scheduledEvent';
+export * from './sticker';
 export * from './subscription';
 export * from './voice';
 export * from './webhook';

@@ -37,3 +37,15 @@ export interface ForumPostCreateData extends ForumThreadCreateRequest {
 
 /** Which thread members to fetch. `with_member` also returns each one's guild member. */
 export type ThreadMemberFetchOptions = RESTQuery<'/channels/{channel_id}/thread-members', 'get'>;
+
+/** Which archived threads to fetch, most recently archived first. `before` is an ISO 8601 timestamp; `limit` is 2-100, 50 by default. */
+export type ArchivedThreadFetchOptions = RESTQuery<'/channels/{channel_id}/threads/archived/public', 'get'>;
+
+/** Which archived private threads the client joined to fetch. `before` is a thread id; `limit` is 2-100, 50 by default. */
+export type JoinedArchivedThreadFetchOptions = RESTQuery<'/channels/{channel_id}/users/@me/threads/archived/private', 'get'>;
+
+/** How to search a channel's threads: by `name`, by `tag`, archived or not, sorted and paged with `limit` and `offset`. */
+export type ThreadSearchOptions = RESTQuery<'/channels/{channel_id}/threads/search', 'get'>;
+
+/** `with_counts` fills in the approximate member and presence counts; `guild_scheduled_event_id` fills in the event. */
+export type InviteFetchOptions = RESTQuery<'/invites/{code}', 'get'>;

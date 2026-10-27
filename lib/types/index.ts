@@ -4,6 +4,7 @@ export * from './cache';
 export * from './channel';
 export * from './client';
 export * from './discord';
+export * from './entitlement';
 export * from './gateway';
 export * from './guild';
 export * from './interaction';

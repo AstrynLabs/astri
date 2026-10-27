@@ -14,3 +14,13 @@ export interface VoiceChannelEffect {
     /** Soundboard sounds only. From 0 to 1. */
     soundVolume: number | null;
 }
+
+export interface VoiceRegion {
+    id: string;
+    name: string;
+    /** Whether it is a custom region, used for events. */
+    custom: boolean;
+    deprecated: boolean;
+    /** Whether it is the closest region to the client. */
+    optimal: boolean;
+}

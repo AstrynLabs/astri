@@ -1,7 +1,7 @@
 import type { ChannelTypes } from '../../../constants';
-import type { DefaultReaction, ForumTag } from '../../../interfaces';
-import type { APIChannel, APIForumTag, ClientContext, ForumPostCreateData } from '../../../types';
-import { splitFiles } from '../util';
+import type { DefaultReaction, ForumTag, ThreadList, ThreadSearchResult } from '../../../interfaces';
+import type { APIChannel, APIForumTag, ArchivedThreadFetchOptions, ClientContext, ForumPostCreateData, ThreadSearchOptions } from '../../../types';
+import { fetchArchivedThreads, searchThreads, splitFiles } from '../util';
 import { upsertThread } from './factory';
 import { GuildChannel } from './guildChannel';
 import type { ThreadChannel } from './threadChannel';
@@ -41,6 +41,20 @@ export abstract class ThreadOnlyChannel extends GuildChannel {
         const [body, files] = splitFiles(data);
         const thread = await this.client.rest.post('channelThreads', this.id, body, { files, reason });
         return upsertThread(this.client, thread as APIChannel, this.guildId);
+    }
+
+    /** Fetches a page of archived posts, most recently archived first. Needs the read message history permission. */
+    fetchArchivedPosts(options?: ArchivedThreadFetchOptions): Promise<ThreadList> {
+        return fetchArchivedThreads(this.client, this.id, this.guildId, false, options);
+    }
+
+    /**
+     * Searches the channel's posts by name or tag, archived or not.
+     *
+     * @throws When Discord is still indexing the channel.
+     */
+    searchPosts(options?: ThreadSearchOptions): Promise<ThreadSearchResult> {
+        return searchThreads(this.client, this.id, this.guildId, options);
     }
 }
 

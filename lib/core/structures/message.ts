@@ -1,6 +1,6 @@
 import { MessageFlags } from '../../constants';
 import type { MessageReaction, Poll } from '../../interfaces';
-import type { APIChannel, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, MessageThreadCreateData, TextBasedChannel } from '../../types';
+import type { APIChannel, APIUser, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, MessageThreadCreateData, PollVoterFetchOptions, ReactionFetchOptions, TextBasedChannel } from '../../types';
 import { Collection } from '../cache';
 import { Attachment } from './attachment';
 import { Base } from './base';
@@ -140,6 +140,18 @@ export class Message extends Base {
     async removeReaction(emoji: EmojiResolvable, userId?: string): Promise<void> {
         if (userId === undefined) await this.client.rest.delete('channelMessageOwnReaction', this.channelId, this.id, emojiParam(emoji));
         else await this.client.rest.delete('channelMessageUserReaction', this.channelId, this.id, emojiParam(emoji), userId);
+    }
+
+    /** Fetches users who reacted with `emoji`, in user id order, and caches them. */
+    async fetchReactions(emoji: EmojiResolvable, options?: ReactionFetchOptions): Promise<User[]> {
+        const users = await this.client.rest.get('channelMessageReaction', this.channelId, this.id, emojiParam(emoji), options);
+        return users.map((user) => upsertUser(this.client, user as APIUser));
+    }
+
+    /** Fetches users who voted for a poll answer, in user id order, and caches them. */
+    async fetchPollVoters(answerId: number, options?: PollVoterFetchOptions): Promise<User[]> {
+        const { users } = await this.client.rest.get('channelPollAnswer', this.channelId, this.id, String(answerId), options);
+        return users.map((user) => upsertUser(this.client, user as APIUser));
     }
 
     /** Removes every reaction, or every reaction with `emoji`. Needs the manage messages permission. */

@@ -1,7 +1,7 @@
-import type { BulkBanResult, GuildAuditLog, GuildBan } from '../../interfaces';
-import type { APIChannel, APIGuildAuditLog, APIGuildBan, APIGuildEmoji, APIGuildPreview, APIGuildTemplate, APIIntegration, APISoundboardSound, AuditLogFetchOptions, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData, SoundboardSoundCreateData, TemplateCreateData } from '../../types';
+import type { BulkBanResult, GuildAuditLog, GuildBan, GuildOnboarding, GuildVanityURL, GuildWidget, GuildWidgetSettings, VoiceRegion, WelcomeScreen } from '../../interfaces';
+import type { APIAutoModerationRule, APIChannel, APIGuildAuditLog, APIGuildBan, APIGuildEmoji, APIGuildPreview, APIGuildScheduledEvent, APIGuildTemplate, APIIntegration, APISoundboardSound, APISticker, APIVoiceState, AuditLogFetchOptions, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, GuildScheduledEventFetchOptions, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData, SoundboardSoundCreateData, TemplateCreateData } from '../../types';
 import type { Cache } from '../cache';
-import type { AutoModerationRule } from './autoModerationRule';
+import { upsertAutoModerationRule, type AutoModerationRule } from './autoModerationRule';
 import { Base } from './base';
 import { createChannel, createThreadChannel, upsertGuildChannel, type Channel, type ThreadChannel } from './channels';
 import { Emoji, upsertEmoji } from './emoji';
@@ -12,12 +12,12 @@ import { upsertInvite, type Invite } from './invite';
 import { Member, upsertMember } from './member';
 import { Presence } from './presence';
 import { Role, upsertRole } from './role';
-import { GuildScheduledEvent } from './scheduledEvent';
+import { GuildScheduledEvent, upsertScheduledEvent } from './scheduledEvent';
 import { SoundboardSound, upsertSoundboardSound } from './soundboardSound';
 import { StageInstance } from './stageInstance';
-import { Sticker } from './sticker';
-import { toGuildAuditLog, toGuildBan } from './util';
-import { VoiceState } from './voiceState';
+import { Sticker, upsertSticker } from './sticker';
+import { toGuildAuditLog, toGuildBan, toOnboarding, toThreadList, toVanityURL, toVoiceRegion, toWelcomeScreen, toWidget, toWidgetSettings } from './util';
+import { upsertVoiceState, VoiceState } from './voiceState';
 import { Webhook } from './webhook';
 
 export class Guild extends Base {
@@ -313,6 +313,118 @@ export class Guild extends Base {
     /** Needs the create expressions permission. */
     async createSoundboardSound(data: SoundboardSoundCreateData, reason?: string): Promise<SoundboardSound> {
         return upsertSoundboardSound(this.client, (await this.client.rest.post('guildSoundboardSound', this.id, data, reason)) as APISoundboardSound, this.id);
+    }
+
+    /** Fetches one soundboard sound and caches it. */
+    async fetchSoundboardSound(soundId: string): Promise<SoundboardSound> {
+        return upsertSoundboardSound(this.client, (await this.client.rest.get('guildSoundboardSound', this.id, soundId)) as APISoundboardSound, this.id);
+    }
+
+    /** Fetches every channel, without threads, and caches them. */
+    async fetchChannels(): Promise<Channel[]> {
+        const channels = await this.client.rest.get('guildChannels', this.id);
+        return ((channels ?? []) as APIChannel[]).map((channel) => upsertGuildChannel(this.client, channel, this.id));
+    }
+
+    /** Fetches every active thread the client can see and caches them, with the client's membership in each it joined. */
+    async fetchActiveThreads(): Promise<ThreadChannel[]> {
+        return toThreadList(this.client, await this.client.rest.get('guildThreadsActive', this.id), this.id).threads;
+    }
+
+    /** Fetches every role and caches them. */
+    async fetchRoles(): Promise<Role[]> {
+        const roles = await this.client.rest.get('guildRoles', this.id);
+        return (roles as APIRole[]).map((role) => upsertRole(this.client, role, this.id));
+    }
+
+    /** Fetches one role and caches it. */
+    async fetchRole(roleId: string): Promise<Role> {
+        return upsertRole(this.client, (await this.client.rest.get('guildRole', this.id, roleId)) as APIRole, this.id);
+    }
+
+    /** How many members hold each role, by role id. `@everyone` is left out. */
+    async fetchRoleMemberCounts(): Promise<Record<string, number>> {
+        return this.client.rest.get('guildRolesMemberCounts', this.id);
+    }
+
+    /** Fetches every custom emoji and caches them. Uploaders are only included with the manage expressions permission. */
+    async fetchEmojis(): Promise<Emoji[]> {
+        const emojis = await this.client.rest.get('guildEmojis', this.id);
+        return ((emojis ?? []) as APIGuildEmoji[]).map((emoji) => upsertEmoji(this.client, emoji, this.id));
+    }
+
+    /** Fetches one custom emoji and caches it. */
+    async fetchEmoji(emojiId: string): Promise<Emoji> {
+        return upsertEmoji(this.client, (await this.client.rest.get('guildEmoji', this.id, emojiId)) as APIGuildEmoji, this.id);
+    }
+
+    /** Fetches every sticker and caches them. Uploaders are only included with the manage expressions permission. */
+    async fetchStickers(): Promise<Sticker[]> {
+        const stickers = await this.client.rest.get('guildStickers', this.id);
+        return (stickers as APISticker[]).map((sticker) => upsertSticker(this.client, { ...sticker, guild_id: this.id }));
+    }
+
+    /** Fetches one sticker and caches it. */
+    async fetchSticker(stickerId: string): Promise<Sticker> {
+        const sticker = (await this.client.rest.get('guildSticker', this.id, stickerId)) as APISticker;
+        return upsertSticker(this.client, { ...sticker, guild_id: this.id });
+    }
+
+    /** Fetches every auto moderation rule and caches them. Needs the manage guild permission. */
+    async fetchAutoModerationRules(): Promise<AutoModerationRule[]> {
+        const rules = await this.client.rest.get('guildAutoModerationRules', this.id);
+        return (rules ?? []).filter((rule) => rule !== null).map((rule) => upsertAutoModerationRule(this.client, rule as unknown as APIAutoModerationRule));
+    }
+
+    /** Fetches one auto moderation rule and caches it. Needs the manage guild permission. */
+    async fetchAutoModerationRule(ruleId: string): Promise<AutoModerationRule> {
+        return upsertAutoModerationRule(this.client, (await this.client.rest.get('guildAutoModerationRule', this.id, ruleId)) as unknown as APIAutoModerationRule);
+    }
+
+    /** Fetches every scheduled event and caches them. */
+    async fetchScheduledEvents(options?: GuildScheduledEventFetchOptions): Promise<GuildScheduledEvent[]> {
+        const events = await this.client.rest.get('guildScheduledEvents', this.id, options);
+        return ((events ?? []) as unknown as APIGuildScheduledEvent[]).map((event) => upsertScheduledEvent(this.client, event));
+    }
+
+    /** Fetches one scheduled event and caches it. */
+    async fetchScheduledEvent(eventId: string, options?: GuildScheduledEventFetchOptions): Promise<GuildScheduledEvent> {
+        return upsertScheduledEvent(this.client, (await this.client.rest.get('guildScheduledEvent', this.id, eventId, options)) as unknown as APIGuildScheduledEvent);
+    }
+
+    /** Fetches a user's voice state, the client's own by default, and caches it. Fails when the user is not in voice. */
+    async fetchVoiceState(userId?: string): Promise<VoiceState> {
+        const state = userId === undefined ? await this.client.rest.get('guildCurrentVoiceState', this.id) : await this.client.rest.get('guildVoiceState', this.id, userId);
+        return upsertVoiceState(this.client, state as APIVoiceState, this.id);
+    }
+
+    /** Voice regions available to the guild's channels, with VIP regions for VIP guilds. */
+    async fetchVoiceRegions(): Promise<VoiceRegion[]> {
+        return ((await this.client.rest.get('guildRegions', this.id)) ?? []).map(toVoiceRegion);
+    }
+
+    /** Needs the manage guild permission. */
+    async fetchVanityURL(): Promise<GuildVanityURL> {
+        return toVanityURL(await this.client.rest.get('guildVanityUrl', this.id));
+    }
+
+    /** Needs the manage guild permission, unless the welcome screen is enabled. */
+    async fetchWelcomeScreen(): Promise<WelcomeScreen> {
+        return toWelcomeScreen(await this.client.rest.get('guildWelcomeScreen', this.id));
+    }
+
+    /** Needs the manage guild permission. */
+    async fetchWidgetSettings(): Promise<GuildWidgetSettings> {
+        return toWidgetSettings(await this.client.rest.get('guildWidget', this.id));
+    }
+
+    /** Fetches the public widget. Fails when the widget is disabled. */
+    async fetchWidget(): Promise<GuildWidget> {
+        return toWidget(await this.client.rest.get('guildWidgetJson', this.id));
+    }
+
+    async fetchOnboarding(): Promise<GuildOnboarding> {
+        return toOnboarding(await this.client.rest.get('guildOnboarding', this.id));
     }
 }
 

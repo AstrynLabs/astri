@@ -1,13 +1,47 @@
 import { EventEmitter } from 'eventemitter3';
 import { IDENTIFY_WINDOW, MEMBER_REQUEST_TIMEOUT } from '../../constants';
-import type { GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest } from '../../interfaces';
-import type { APIApplicationCommand, APIChannel, APICurrentUser, APIGuildPreview, APIGuildTemplate, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayPresenceUpdateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions, PresenceOptions, RequestGuildMembersOptions, VoiceStateOptions } from '../../types';
+import type { ActivityInstance, ApplicationRoleConnectionMetadata, GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest, StickerPack, Subscription, UserGuild, VoiceRegion } from '../../interfaces';
+import type {
+    APIApplicationCommand,
+    APIChannel,
+    APICurrentUser,
+    APIEntitlement,
+    APIGuildPreview,
+    APIGuildTemplate,
+    APIInvite,
+    APISoundboardSound,
+    APIStageInstance,
+    APISticker,
+    APIUser,
+    APIWebhook,
+    ApplicationCommandBulkData,
+    ApplicationCommandCreateData,
+    ApplicationCommandEditData,
+    ApplicationCommandFetchOptions,
+    ClientCaches,
+    ClientContext,
+    ClientEvents,
+    ClientOptions,
+    CurrentUserGuildFetchOptions,
+    EntitlementFetchOptions,
+    GatewayGuildCreateData,
+    GatewayPresenceUpdateData,
+    GatewayReadyData,
+    GuildApplicationCommandBulkData,
+    GuildApplicationCommandCreateData,
+    GuildFetchOptions,
+    InviteFetchOptions,
+    PresenceOptions,
+    RequestGuildMembersOptions,
+    SubscriptionFetchOptions,
+    VoiceStateOptions
+} from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
 import { RequestHandler } from '../rest';
-import type { Channel, Entitlement, ExtendedUser, Member, User } from '../structures';
-import { ApplicationCommand, Guild, GuildPreview, GuildTemplate, upsertChannel, upsertExtendedUser, upsertUser } from '../structures';
-import { toCommandPermissions } from '../structures/util';
+import type { Channel, Entitlement, ExtendedUser, Invite, Member, StageInstance, Sticker, User } from '../structures';
+import { ApplicationCommand, Guild, GuildPreview, GuildTemplate, SoundboardSound, upsertChannel, upsertEntitlement, upsertExtendedUser, upsertInvite, upsertStageInstance, upsertSticker, upsertUser, Webhook } from '../structures';
+import { toActivityInstance, toCommandPermissions, toRoleConnectionMetadata, toStickerPack, toSubscription, toUserGuild, toVoiceRegion } from '../structures/util';
 import { handleDispatch, Shard } from '../ws';
 
 /**
@@ -239,6 +273,92 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     /** Fetches a user, cached or not, and caches it. */
     async fetchUser(userId: string): Promise<User> {
         return upsertUser(this, (await this.rest.get('user', userId)) as APIUser);
+    }
+
+    /** Fetches the client's own user and updates `client.user`. */
+    async fetchCurrentUser(): Promise<ExtendedUser> {
+        this.user = upsertExtendedUser(this, (await this.rest.get('currentUser')) as APICurrentUser);
+        return this.user;
+    }
+
+    /** Lists up to 200 guilds the client is in, in id order, with its permissions in each. Nothing is cached. */
+    async fetchGuilds(options?: CurrentUserGuildFetchOptions): Promise<UserGuild[]> {
+        return ((await this.rest.get('currentUserGuilds', options)) ?? []).map(toUserGuild);
+    }
+
+    /** Fetches an invite by code. It is cached when its guild is. */
+    async fetchInvite(code: string, options?: InviteFetchOptions): Promise<Invite> {
+        return upsertInvite(this, (await this.rest.get('invite', code, options)) as APIInvite);
+    }
+
+    /** Fetches the live stage in a stage channel. Fails when nothing is live. */
+    async fetchStageInstance(channelId: string): Promise<StageInstance> {
+        return upsertStageInstance(this, (await this.rest.get('stageInstance', channelId)) as APIStageInstance);
+    }
+
+    /** Fetches any sticker by id: a standard one, or a guild one, cached if its guild is. */
+    async fetchSticker(stickerId: string): Promise<Sticker> {
+        return upsertSticker(this, (await this.rest.get('sticker', stickerId)) as APISticker);
+    }
+
+    /** Fetches every official sticker pack. */
+    async fetchStickerPacks(): Promise<StickerPack[]> {
+        const { sticker_packs } = await this.rest.get('stickerPacks');
+        return sticker_packs.map((pack) => toStickerPack(this, pack));
+    }
+
+    async fetchStickerPack(packId: string): Promise<StickerPack> {
+        return toStickerPack(this, await this.rest.get('stickerPack', packId));
+    }
+
+    /**
+     * Fetches a webhook. Without `token`, needs the manage webhooks permission. With it, no permission is needed, but
+     * `user` is not returned.
+     */
+    async fetchWebhook(webhookId: string, token?: string): Promise<Webhook> {
+        const webhook = token === undefined ? await this.rest.get('webhook', webhookId) : await this.rest.get('webhookToken', webhookId, token);
+        return new Webhook(this, webhook as APIWebhook);
+    }
+
+    /** Discord's built-in soundboard sounds, available in every guild. */
+    async fetchDefaultSoundboardSounds(): Promise<SoundboardSound[]> {
+        const sounds = await this.rest.get('soundboardDefaultSounds');
+        return (sounds as APISoundboardSound[]).map((sound) => new SoundboardSound(this, sound));
+    }
+
+    /** Voice regions to pick from when setting a channel's `rtc_region`. */
+    async fetchVoiceRegions(): Promise<VoiceRegion[]> {
+        return ((await this.rest.get('voiceRegions')) ?? []).map(toVoiceRegion);
+    }
+
+    /** Fetches the application's entitlements, newest first unless paged with `after`, and caches them. */
+    async fetchEntitlements(options?: EntitlementFetchOptions): Promise<Entitlement[]> {
+        const entitlements = await this.rest.get('applicationEntitlements', await this.#resolveApplicationId(), options);
+        return (entitlements as APIEntitlement[]).map((entitlement) => upsertEntitlement(this, entitlement));
+    }
+
+    /** Fetches one of the application's entitlements and caches it. */
+    async fetchEntitlement(entitlementId: string): Promise<Entitlement> {
+        return upsertEntitlement(this, (await this.rest.get('applicationEntitlement', await this.#resolveApplicationId(), entitlementId)) as APIEntitlement);
+    }
+
+    /** Fetches subscriptions to one of the application's subscription SKUs. */
+    async fetchSubscriptions(skuId: string, options?: SubscriptionFetchOptions): Promise<Subscription[]> {
+        return (await this.rest.get('skuSubscriptions', skuId, options)).map(toSubscription);
+    }
+
+    async fetchSubscription(skuId: string, subscriptionId: string): Promise<Subscription> {
+        return toSubscription(await this.rest.get('skuSubscription', skuId, subscriptionId));
+    }
+
+    /** The application's linked role metadata fields. */
+    async fetchRoleConnectionMetadata(): Promise<ApplicationRoleConnectionMetadata[]> {
+        return ((await this.rest.get('applicationRoleConnectionsMetadata', await this.#resolveApplicationId())) ?? []).map(toRoleConnectionMetadata);
+    }
+
+    /** Fetches a running instance of the application's activity. */
+    async fetchActivityInstance(instanceId: string): Promise<ActivityInstance> {
+        return toActivityInstance(await this.rest.get('applicationActivityInstance', await this.#resolveApplicationId(), instanceId));
     }
 
     /** Fetches a channel or thread the client can see. Guild channels and threads are cached with their guild. */

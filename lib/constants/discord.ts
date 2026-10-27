@@ -483,3 +483,38 @@ export const OverwriteTypes = {
     Member: 1
 } as const;
 export type OverwriteTypes = (typeof OverwriteTypes)[keyof typeof OverwriteTypes];
+
+/** Values of a guild onboarding's `mode`: which channels and prompts count towards the onboarding requirements. */
+export const GuildOnboardingModes = {
+    /** Only default channels count. */
+    Default: 0,
+    /** Default channels and questions count. */
+    Advanced: 1
+} as const;
+export type GuildOnboardingModes = (typeof GuildOnboardingModes)[keyof typeof GuildOnboardingModes];
+
+export const OnboardingPromptTypes = {
+    MultipleChoice: 0,
+    Dropdown: 1
+} as const;
+export type OnboardingPromptTypes = (typeof OnboardingPromptTypes)[keyof typeof OnboardingPromptTypes];
+
+/** How a linked role's metadata value is compared against the guild's requirement. */
+export const ApplicationRoleConnectionMetadataTypes = {
+    IntegerLessThanOrEqual: 1,
+    IntegerGreaterThanOrEqual: 2,
+    IntegerEqual: 3,
+    IntegerNotEqual: 4,
+    DatetimeLessThanOrEqual: 5,
+    DatetimeGreaterThanOrEqual: 6,
+    BooleanEqual: 7,
+    BooleanNotEqual: 8
+} as const;
+export type ApplicationRoleConnectionMetadataTypes = (typeof ApplicationRoleConnectionMetadataTypes)[keyof typeof ApplicationRoleConnectionMetadataTypes];
+
+/** A user's answer to a scheduled event. */
+export const GuildScheduledEventUserResponses = {
+    Interested: 0,
+    NotInterested: 1
+} as const;
+export type GuildScheduledEventUserResponses = (typeof GuildScheduledEventUserResponses)[keyof typeof GuildScheduledEventUserResponses];

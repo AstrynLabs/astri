@@ -1,6 +1,43 @@
-import type { Activity, ApplicationCommandOption, AuditLogChange, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildAuditLog, GuildBan, IntegrationApplication, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule, Subscription, VoiceChannelEffect } from '../../interfaces';
+import type {
+    Activity,
+    ActivityInstance,
+    ApplicationCommandOption,
+    ApplicationRoleConnectionMetadata,
+    AuditLogChange,
+    AutoModerationAction,
+    AutoModerationActionExecution,
+    AutoModerationTriggerMetadata,
+    ClientStatus,
+    EmbedMedia,
+    GuildApplicationCommandPermissions,
+    GuildAuditLog,
+    GuildBan,
+    GuildOnboarding,
+    GuildScheduledEventUser,
+    GuildScheduledEventUserCounts,
+    GuildVanityURL,
+    GuildWidget,
+    GuildWidgetSettings,
+    IntegrationApplication,
+    InviteGuild,
+    MessageReaction,
+    PinnedMessages,
+    Poll,
+    ReactionEmoji,
+    RecurrenceRule,
+    StickerPack,
+    Subscription,
+    ThreadList,
+    ThreadSearchResult,
+    UserGuild,
+    VoiceChannelEffect,
+    VoiceRegion,
+    WelcomeScreen
+} from '../../interfaces';
 import type {
     APIActivity,
+    APIActivityInstance,
+    APIApplicationRoleConnectionMetadata,
     APIApplicationCommandOption,
     APIAutoModerationAction,
     APIAutoModerationTriggerMetadata,
@@ -13,6 +50,14 @@ import type {
     APIChannel,
     APIGuildAuditLog,
     APIGuildBan,
+    APIGuildMember,
+    APIGuildOnboarding,
+    APIGuildScheduledEventUser,
+    APIGuildScheduledEventUserCounts,
+    APIGuildVanityURL,
+    APIGuildWelcomeScreen,
+    APIGuildWidget,
+    APIGuildWidgetSettings,
     APIGuildScheduledEvent,
     APIIntegration,
     APIUser,
@@ -23,7 +68,14 @@ import type {
     APIPoll,
     APIReactionEmoji,
     APIRecurrenceRule,
+    APISticker,
+    APIStickerPack,
     APISubscription,
+    APIThreadList,
+    APIThreadMember,
+    APIUserGuild,
+    APIVoiceRegion,
+    ArchivedThreadFetchOptions,
     ClientContext,
     EmojiResolvable,
     GatewayAutoModerationActionExecutionData,
@@ -33,18 +85,21 @@ import type {
     PermissionResolvable,
     PinFetchOptions,
     RESTFile,
-    TextBasedChannel
+    TextBasedChannel,
+    ThreadSearchOptions
 } from '../../types';
 import { ALL_PERMISSIONS, OverwriteTypes, Permissions, TIMED_OUT_PERMISSIONS } from '../../constants';
 import { ApplicationCommand } from './applicationCommand';
 import { upsertAutoModerationRule } from './autoModerationRule';
-import { upsertThread, type GuildChannel } from './channels';
+import { upsertThread, upsertThreadMember, type GuildChannel } from './channels';
 import { GuildAuditLogEntry } from './guildAuditLogEntry';
 import { GuildIntegration } from './guildIntegration';
 import type { Guild } from './guild';
-import type { Member } from './member';
+import { upsertMember, type Member } from './member';
 import { upsertMessage, type Message } from './message';
+import { Permission } from './permission';
 import { upsertScheduledEvent } from './scheduledEvent';
+import { upsertSticker } from './sticker';
 import { upsertUser } from './user';
 import { Webhook } from './webhook';
 
@@ -425,4 +480,151 @@ export function toGuildAuditLog(client: ClientContext, data: APIGuildAuditLog, g
         autoModerationRules: data.auto_moderation_rules.filter((rule) => rule !== null).map((rule) => upsertAutoModerationRule(client, rule as unknown as APIAutoModerationRule)),
         applicationCommands: data.application_commands.map((command) => new ApplicationCommand(client, command as unknown as APIApplicationCommand))
     };
+}
+
+export function toUserGuild(data: APIUserGuild): UserGuild {
+    return {
+        id: data.id,
+        name: data.name,
+        icon: data.icon,
+        banner: data.banner,
+        owner: data.owner,
+        permissions: new Permission(data.permissions),
+        features: data.features,
+        approximateMemberCount: data.approximate_member_count ?? null,
+        approximatePresenceCount: data.approximate_presence_count ?? null
+    };
+}
+
+export function toVanityURL(data: APIGuildVanityURL): GuildVanityURL {
+    return { code: data.code, uses: data.uses };
+}
+
+export function toWelcomeScreen(data: APIGuildWelcomeScreen): WelcomeScreen {
+    return {
+        description: data.description,
+        welcomeChannels: data.welcome_channels.map((channel) => ({ channelId: channel.channel_id, description: channel.description, emojiId: channel.emoji_id, emojiName: channel.emoji_name }))
+    };
+}
+
+export function toWidgetSettings(data: APIGuildWidgetSettings): GuildWidgetSettings {
+    return { enabled: data.enabled, channelId: data.channel_id };
+}
+
+export function toWidget(data: APIGuildWidget): GuildWidget {
+    return {
+        id: data.id,
+        name: data.name,
+        instantInvite: data.instant_invite,
+        channels: data.channels.map((channel) => ({ id: channel.id, name: channel.name, position: channel.position })),
+        members: data.members.map((member) => ({ id: member.id, username: member.username, status: member.status, avatarURL: member.avatar_url, activityName: member.activity?.name ?? null, channelId: member.channel_id ?? null })),
+        presenceCount: data.presence_count
+    };
+}
+
+export function toOnboarding(data: APIGuildOnboarding): GuildOnboarding {
+    return {
+        guildId: data.guild_id,
+        prompts: data.prompts.map((prompt) => ({
+            id: prompt.id,
+            type: prompt.type,
+            title: prompt.title,
+            options: prompt.options.map((option) => ({
+                id: option.id,
+                title: option.title,
+                description: option.description,
+                emoji: option.emoji.id === null && option.emoji.name === null ? null : toReactionEmoji(option.emoji),
+                roleIds: option.role_ids,
+                channelIds: option.channel_ids
+            })),
+            singleSelect: prompt.single_select,
+            required: prompt.required,
+            inOnboarding: prompt.in_onboarding
+        })),
+        defaultChannelIds: data.default_channel_ids,
+        enabled: data.enabled,
+        mode: data.mode
+    };
+}
+
+export function toVoiceRegion(data: APIVoiceRegion): VoiceRegion {
+    return { id: data.id, name: data.name, custom: data.custom, deprecated: data.deprecated, optimal: data.optimal };
+}
+
+export function toStickerPack(client: ClientContext, data: APIStickerPack): StickerPack {
+    return {
+        id: data.id,
+        skuId: data.sku_id,
+        name: data.name,
+        description: data.description,
+        stickers: data.stickers.map((sticker) => upsertSticker(client, sticker as APISticker)),
+        coverStickerId: data.cover_sticker_id ?? null,
+        bannerAssetId: data.banner_asset_id ?? null
+    };
+}
+
+export function toRoleConnectionMetadata(data: APIApplicationRoleConnectionMetadata): ApplicationRoleConnectionMetadata {
+    return {
+        type: data.type,
+        key: data.key,
+        name: data.name,
+        nameLocalizations: data.name_localizations ?? null,
+        description: data.description,
+        descriptionLocalizations: data.description_localizations ?? null
+    };
+}
+
+export function toActivityInstance(data: APIActivityInstance): ActivityInstance {
+    const { location } = data;
+    return {
+        applicationId: data.application_id,
+        instanceId: data.instance_id,
+        launchId: data.launch_id,
+        location: { id: location.id, kind: location.kind, channelId: location.channel_id, guildId: location.kind === 'gc' ? location.guild_id : null },
+        userIds: data.users
+    };
+}
+
+export function toScheduledEventUser(client: ClientContext, data: APIGuildScheduledEventUser, guildId: string): GuildScheduledEventUser {
+    const user = data.user === undefined ? null : upsertUser(client, data.user as APIUser);
+    return {
+        eventId: data.guild_scheduled_event_id,
+        exceptionId: data.guild_scheduled_event_exception_id ?? null,
+        userId: data.user_id,
+        user,
+        member: data.member === undefined || user === null ? null : upsertMember(client, { ...(data.member as unknown as APIGuildMember), user: data.user as APIUser }, guildId),
+        response: data.response
+    };
+}
+
+export function toScheduledEventUserCounts(data: APIGuildScheduledEventUserCounts): GuildScheduledEventUserCounts {
+    return { total: data.guild_scheduled_event_count, exceptions: data.guild_scheduled_event_exception_counts };
+}
+
+/** The threads of a thread list as the matching classes, with the client's membership in each cached on it. */
+export function toThreadList(client: ClientContext, data: APIThreadList, guildId: string): ThreadList {
+    const threads = data.threads.map((thread) => upsertThread(client, thread as unknown as APIChannel, guildId));
+    const byId = new Map(threads.map((thread) => [thread.id, thread]));
+    for (const member of data.members) {
+        const thread = member.id === undefined ? undefined : byId.get(member.id);
+        if (thread !== undefined && member.user_id !== undefined) upsertThreadMember(thread, member as unknown as APIThreadMember, member.user_id);
+    }
+    return { threads, hasMore: data.has_more };
+}
+
+/** Fetches a page of public archived threads, or of private ones with `isPrivate`, which needs the manage threads permission. */
+export async function fetchArchivedThreads(client: ClientContext, channelId: string, guildId: string, isPrivate: boolean, options: ArchivedThreadFetchOptions = {}): Promise<ThreadList> {
+    const list = isPrivate ? await client.rest.get('channelPrivateArchivedThreads', channelId, options) : await client.rest.get('channelPublicArchivedThreads', channelId, options);
+    return toThreadList(client, list, guildId);
+}
+
+/**
+ * Searches a channel's threads.
+ *
+ * @throws When Discord is still indexing the channel; the error says how many seconds to wait before retrying.
+ */
+export async function searchThreads(client: ClientContext, channelId: string, guildId: string, options: ThreadSearchOptions = {}): Promise<ThreadSearchResult> {
+    const result = await client.rest.get('channelThreadsSearch', channelId, options);
+    if ('retry_after' in result) throw new Error(`Threads of channel ${channelId} are still being indexed, retry in ${result.retry_after}s`);
+    return { ...toThreadList(client, result, guildId), totalResults: result.total_results };
 }
