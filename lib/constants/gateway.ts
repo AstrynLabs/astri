@@ -4,6 +4,9 @@ export const GATEWAY_VERSION = 10;
 /** Default gateway endpoint, used until Discord hands out a session-specific resume URL. */
 export const DEFAULT_GATEWAY_URL = 'wss://gateway.discord.gg';
 
+/** Length in ms of the window in which up to `max_concurrency` shards may identify. */
+export const IDENTIFY_WINDOW = 5_000;
+
 /** Gateway payload opcodes. */
 export const GatewayOpcodes = {
     Dispatch: 0,

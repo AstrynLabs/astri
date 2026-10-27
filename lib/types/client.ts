@@ -10,9 +10,12 @@ import type { GatewayDispatchPayload, GatewayReadyData, ShardOptions } from './g
 import type { RESTOptions, RESTRateLimitInfo } from './rest';
 
 export interface ClientOptions extends Omit<ShardOptions, 'total'> {
-    /** Number of shards to run. Default: `1`. */
+    /**
+     * Number of shards to run. When omitted, `connect()` asks `GET /gateway/bot` for Discord's recommended count,
+     * and also takes `maxConcurrency` and `gatewayURL` from it unless they are set.
+     */
     shards?: number;
-    /** Shards allowed to identify per 5 second window, from `GET /gateway/bot`'s `max_concurrency`. Default: `1`. */
+    /** Shards allowed to identify per 5 second window. Default: `GET /gateway/bot`'s `max_concurrency` when `shards` is omitted, otherwise `1`. */
     maxConcurrency?: number;
     /** How each kind of structure is cached. */
     cache?: CacheManagerOptions<ClientCaches>;

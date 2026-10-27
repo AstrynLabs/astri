@@ -1,4 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
+import { IDENTIFY_WINDOW } from '../../constants';
 import type { APIUser, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayReadyData } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
@@ -6,8 +7,6 @@ import { RequestHandler } from '../rest';
 import type { Entitlement, Guild, User } from '../structures';
 import { upsertUser } from '../structures';
 import { handleDispatch, Shard } from '../ws';
-
-const IDENTIFY_WINDOW = 5_000;
 
 /**
  * Entry point of the library: runs the shards, keeps the caches current from their dispatches, and re-emits
@@ -26,21 +25,24 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     applicationId: string | null = null;
 
     readonly #options: ClientOptions;
-    readonly #shardCount: number;
-    readonly #maxConcurrency: number;
     readonly #readyShards = new Set<number>();
     readonly #connectTimers = new Set<ReturnType<typeof setTimeout>>();
+    #shardCount: number | null;
+    #maxConcurrency: number;
+    #gatewayURL: string | undefined;
+    #sharding: Promise<void> | null = null;
+    #generation = 0;
     #ready = false;
 
     constructor(options: ClientOptions) {
         super();
-        const shards = options.shards ?? 1;
-        if (!(Number.isInteger(shards) && shards > 0)) throw new RangeError(`Shard count must be a positive integer, received ${shards}`);
-        const maxConcurrency = options.maxConcurrency ?? 1;
-        if (!(Number.isInteger(maxConcurrency) && maxConcurrency > 0)) throw new RangeError(`maxConcurrency must be a positive integer, received ${maxConcurrency}`);
+        const { shards, maxConcurrency } = options;
+        if (shards !== undefined && !(Number.isInteger(shards) && shards > 0)) throw new RangeError(`Shard count must be a positive integer, received ${shards}`);
+        if (maxConcurrency !== undefined && !(Number.isInteger(maxConcurrency) && maxConcurrency > 0)) throw new RangeError(`maxConcurrency must be a positive integer, received ${maxConcurrency}`);
         this.#options = options;
-        this.#shardCount = shards;
-        this.#maxConcurrency = maxConcurrency;
+        this.#shardCount = shards ?? null;
+        this.#maxConcurrency = maxConcurrency ?? 1;
+        this.#gatewayURL = options.gatewayURL;
         this.cache = new CacheManager(options.cache);
         this.guilds = this.cache.create('guilds');
         this.users = this.cache.create('users');
@@ -64,11 +66,24 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     }
 
     /**
-     * Connects every shard. Identifies are staggered in buckets of `maxConcurrency` every 5 seconds to stay
-     * within Discord's identify limit. Does nothing for shards that are already connected.
+     * Connects every shard. Without a `shards` option, the shard count, `maxConcurrency` and gateway URL are first
+     * fetched from `GET /gateway/bot`, once per client. Identifies are staggered in buckets of `maxConcurrency` every
+     * 5 seconds to stay within Discord's identify limit. Does nothing for shards that are already connected.
+     *
+     * @throws When `GET /gateway/bot` fails, or reports fewer session starts left than shards to start.
      */
-    connect(): void {
-        for (let id = 0; id < this.#shardCount; id++) {
+    async connect(): Promise<void> {
+        const generation = this.#generation;
+        if (this.#shardCount === null) {
+            this.#sharding ??= this.#fetchSharding().catch((error: unknown) => {
+                this.#sharding = null;
+                throw error;
+            });
+            await this.#sharding;
+            if (generation !== this.#generation) return;
+        }
+        const shardCount = this.#shardCount as number;
+        for (let id = 0; id < shardCount; id++) {
             const shard = this.shards.get(id) ?? this.#createShard(id);
             const delay = Math.floor(id / this.#maxConcurrency) * IDENTIFY_WINDOW;
             if (delay === 0) {
@@ -85,6 +100,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
 
     /** Disconnects every shard and cancels any still waiting to connect. Caches are kept. */
     disconnect(): void {
+        this.#generation++;
         for (const timer of this.#connectTimers) clearTimeout(timer);
         this.#connectTimers.clear();
         for (const shard of this.shards.values()) shard.disconnect();
@@ -100,9 +116,19 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         this.removeAllListeners();
     }
 
+    async #fetchSharding(): Promise<void> {
+        const gateway = await this.rest.get('gatewayBot');
+        const { max_concurrency, remaining, reset_after } = gateway.session_start_limit;
+        if (remaining < gateway.shards) throw new Error(`Only ${remaining} session starts left for ${gateway.shards} shards, the limit resets in ${Math.ceil(reset_after / 1000)}s`);
+        this.#shardCount = gateway.shards;
+        this.#maxConcurrency = this.#options.maxConcurrency ?? max_concurrency;
+        this.#gatewayURL = this.#options.gatewayURL ?? gateway.url;
+        this.emit('debug', `[Client] Using ${gateway.shards} recommended shards, max concurrency ${this.#maxConcurrency}, ${remaining}/${gateway.session_start_limit.total} session starts left`);
+    }
+
     #createShard(id: number): Shard {
-        const { token, intents, gatewayURL, compress, largeThreshold, presence, autoReconnect } = this.#options;
-        const shard = new Shard(id, { token, intents, total: this.#shardCount, gatewayURL, compress, largeThreshold, presence, autoReconnect });
+        const { token, intents, compress, largeThreshold, presence, autoReconnect } = this.#options;
+        const shard = new Shard(id, { token, intents, total: this.#shardCount as number, gatewayURL: this.#gatewayURL, compress, largeThreshold, presence, autoReconnect });
         shard.on('ready', (data) => this.#onShardReady(shard, data));
         shard.on('resumed', () => this.emit('shardResume', shard));
         shard.on('disconnect', (code, reason) => this.emit('shardDisconnect', shard, code, reason));
