@@ -1,6 +1,7 @@
 import type { APIRole, ClientContext, RoleEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
+import { Permission } from './permission';
 
 export class Role extends Base {
     readonly guildId: string;
@@ -10,7 +11,7 @@ export class Role extends Base {
     icon: string | null = null;
     unicodeEmoji: string | null = null;
     position: number;
-    permissions: bigint;
+    permissions: Permission;
     managed: boolean;
     mentionable: boolean;
     flags: number;
@@ -34,7 +35,7 @@ export class Role extends Base {
         if (data.icon !== undefined) this.icon = data.icon;
         if (data.unicode_emoji !== undefined) this.unicodeEmoji = data.unicode_emoji;
         if (data.position !== undefined) this.position = data.position;
-        if (data.permissions !== undefined) this.permissions = BigInt(data.permissions);
+        if (data.permissions !== undefined) this.permissions = new Permission(data.permissions);
         if (data.managed !== undefined) this.managed = data.managed;
         if (data.mentionable !== undefined) this.mentionable = data.mentionable;
         if (data.flags !== undefined) this.flags = data.flags;

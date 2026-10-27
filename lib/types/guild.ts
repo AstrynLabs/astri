@@ -41,3 +41,6 @@ export type PruneCountOptions = RESTQuery<'/guilds/{guild_id}/prune', 'get'>;
 
 /** `with_counts` fills in the approximate member and presence counts. */
 export type GuildFetchOptions = RESTQuery<'/guilds/{guild_id}', 'get'>;
+
+/** Which audit log entries to fetch: filtered by `user_id` or `action_type`, paged with `before` or `after`. `limit` is 1-100, 50 by default. */
+export type AuditLogFetchOptions = RESTQuery<'/guilds/{guild_id}/audit-logs', 'get'>;

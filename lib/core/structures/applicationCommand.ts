@@ -3,6 +3,7 @@ import type { ApplicationCommandOption, GuildApplicationCommandPermissions } fro
 import type { APIApplicationCommand, ApplicationCommandEditData, ClientContext } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
+import { Permission } from './permission';
 import { toCommandOption, toCommandPermissions } from './util';
 
 /** A command registered by the application, globally or in one guild. Commands are not cached, since no event carries them. */
@@ -18,7 +19,7 @@ export class ApplicationCommand extends Base {
     descriptionLocalizations: Record<string, string> | null = null;
     options: ApplicationCommandOption[] = [];
     /** Permissions members need to see the command, or `null` for everyone. Admins can override it per guild. */
-    defaultMemberPermissions: bigint | null = null;
+    defaultMemberPermissions: Permission | null = null;
     /** Where the command can be used. `null` means the default for the installation context. */
     contexts: InteractionContextTypes[] | null = null;
     /** Installation contexts the command is available in: `0` guild, `1` user. */
@@ -47,7 +48,7 @@ export class ApplicationCommand extends Base {
         if (data.description !== undefined) this.description = data.description;
         if (data.description_localizations !== undefined) this.descriptionLocalizations = data.description_localizations;
         if (data.options !== undefined) this.options = data.options.map(toCommandOption);
-        if (data.default_member_permissions !== undefined) this.defaultMemberPermissions = data.default_member_permissions === null ? null : BigInt(data.default_member_permissions);
+        if (data.default_member_permissions !== undefined) this.defaultMemberPermissions = data.default_member_permissions === null ? null : new Permission(data.default_member_permissions);
         if (data.contexts !== undefined) this.contexts = data.contexts;
         if (data.integration_types !== undefined) this.integrationTypes = data.integration_types;
         if (data.nsfw !== undefined) this.nsfw = data.nsfw;

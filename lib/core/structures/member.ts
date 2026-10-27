@@ -1,8 +1,9 @@
 import type { APIGuildMember, BanOptions, ClientContext, MemberEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
+import { Permission } from './permission';
 import { upsertUser, type User } from './user';
-import { parseTimestamp } from './util';
+import { computeGuildPermissions, parseTimestamp } from './util';
 
 /** A user's membership in one guild. Shares its `id` with the user. */
 export class Member extends Base {
@@ -38,6 +39,23 @@ export class Member extends Base {
     /** Nickname, falling back to the user's display name and then their username. */
     get displayName(): string {
         return this.nick ?? this.user.globalName ?? this.user.username;
+    }
+
+    /** Whether the member is timed out right now. */
+    get timedOut(): boolean {
+        return this.communicationDisabledUntil !== null && this.communicationDisabledUntil > Date.now();
+    }
+
+    /**
+     * The member's permissions across the guild, from `@everyone` and their roles. Channel overwrites are not applied;
+     * use {@link GuildChannel.permissionsOf} for those.
+     *
+     * @throws When the guild is not cached.
+     */
+    get permissions(): Permission {
+        const guild = this.guild;
+        if (guild === undefined) throw new Error(`Guild ${this.guildId} is not cached`);
+        return new Permission(computeGuildPermissions(guild, this));
     }
 
     /** Applies a payload. Fields missing from `data` keep their current value. */

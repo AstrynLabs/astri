@@ -1,8 +1,11 @@
 import type { ChannelTypes } from '../../../constants';
-import type { PermissionOverwrite } from '../../../interfaces';
-import type { APIChannel, APIInvite, APIOverwrite, APIWebhook, ChannelPermissionEditData, ClientContext, InviteCreateData, WebhookCreateData } from '../../../types';
+import type { APIChannel, APIInvite, APIWebhook, ChannelPermissionEditData, ClientContext, InviteCreateData, WebhookCreateData } from '../../../types';
 import type { Guild } from '../guild';
 import { upsertInvite, type Invite } from '../invite';
+import type { Member } from '../member';
+import { Permission } from '../permission';
+import { PermissionOverwrite } from '../permissionOverwrite';
+import { computeChannelPermissions } from '../util';
 import { Webhook } from '../webhook';
 import { Channel } from './channel';
 
@@ -29,8 +32,17 @@ export abstract class GuildChannel extends Channel {
         super.patch(data);
         if (typeof data.name === 'string') this.name = data.name;
         if (data.position !== undefined) this.position = data.position;
-        if (data.permission_overwrites !== undefined) this.permissionOverwrites = data.permission_overwrites.map(toOverwrite);
+        if (data.permission_overwrites !== undefined) this.permissionOverwrites = data.permission_overwrites.map((overwrite) => new PermissionOverwrite(overwrite));
         if (data.parent_id !== undefined) this.parentId = data.parent_id;
+    }
+
+    /**
+     * A member's permissions in this channel, from their roles and the channel's overwrites.
+     *
+     * @throws When the guild, or the member given by id, is not cached.
+     */
+    permissionsOf(member: Member | string): Permission {
+        return new Permission(computeChannelPermissions(this, member));
     }
 
     /** Creates or replaces the permission overwrite for a role or member. Needs the manage roles permission. */
@@ -83,8 +95,4 @@ export class DirectoryChannel extends GuildChannel {
         super(client, data, guildId);
         this.patch(data);
     }
-}
-
-function toOverwrite(data: APIOverwrite): PermissionOverwrite {
-    return { id: data.id, type: data.type, allow: BigInt(data.allow), deny: BigInt(data.deny) };
 }

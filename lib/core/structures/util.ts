@@ -1,7 +1,52 @@
-import type { Activity, ApplicationCommandOption, AuditLogEntry, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildBan, Integration, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule, Subscription, VoiceChannelEffect } from '../../interfaces';
-import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIGuildBan, APIIntegration, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, APISubscription, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, GatewayGuildAuditLogEntryCreateData, GatewayVoiceChannelEffectSendData, MessageCreateData, MessageFetchOptions, PinFetchOptions, RESTFile, TextBasedChannel } from '../../types';
+import type { Activity, ApplicationCommandOption, AuditLogChange, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildAuditLog, GuildBan, IntegrationApplication, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule, Subscription, VoiceChannelEffect } from '../../interfaces';
+import type {
+    APIActivity,
+    APIApplicationCommandOption,
+    APIAutoModerationAction,
+    APIAutoModerationTriggerMetadata,
+    APIClientStatus,
+    APIEmbed,
+    APIGuildApplicationCommandPermissions,
+    APIApplicationCommand,
+    APIAuditLogEntry,
+    APIAutoModerationRule,
+    APIChannel,
+    APIGuildAuditLog,
+    APIGuildBan,
+    APIGuildScheduledEvent,
+    APIIntegration,
+    APIUser,
+    APIWebhook,
+    APIIntegrationApplication,
+    APIInviteGuild,
+    APIMessageReaction,
+    APIPoll,
+    APIReactionEmoji,
+    APIRecurrenceRule,
+    APISubscription,
+    ClientContext,
+    EmojiResolvable,
+    GatewayAutoModerationActionExecutionData,
+    GatewayVoiceChannelEffectSendData,
+    MessageCreateData,
+    MessageFetchOptions,
+    PermissionResolvable,
+    PinFetchOptions,
+    RESTFile,
+    TextBasedChannel
+} from '../../types';
+import { ALL_PERMISSIONS, OverwriteTypes, Permissions, TIMED_OUT_PERMISSIONS } from '../../constants';
+import { ApplicationCommand } from './applicationCommand';
+import { upsertAutoModerationRule } from './autoModerationRule';
+import { upsertThread, type GuildChannel } from './channels';
+import { GuildAuditLogEntry } from './guildAuditLogEntry';
+import { GuildIntegration } from './guildIntegration';
+import type { Guild } from './guild';
+import type { Member } from './member';
 import { upsertMessage, type Message } from './message';
+import { upsertScheduledEvent } from './scheduledEvent';
 import { upsertUser } from './user';
+import { Webhook } from './webhook';
 
 export function parseTimestamp(value: string | null): number | null {
     return value === null ? null : Date.parse(value);
@@ -292,50 +337,53 @@ export function toGuildBan(client: ClientContext, data: APIGuildBan): GuildBan {
     return { user: upsertUser(client, data.user), reason: data.reason };
 }
 
-export function toAuditLogEntry(data: GatewayGuildAuditLogEntryCreateData): AuditLogEntry {
-    return {
-        id: data.id,
-        guildId: data.guild_id,
-        actionType: data.action_type,
-        userId: data.user_id,
-        targetId: data.target_id,
-        changes: (data.changes ?? []).map((change) => ({ key: change.key ?? '', newValue: change.new_value, oldValue: change.old_value })),
-        options: data.options ?? {},
-        reason: data.reason ?? null
-    };
+export function toAuditLogChanges(data: APIAuditLogEntry['changes']): AuditLogChange[] {
+    return (data ?? []).map((change) => ({ key: change.key ?? '', newValue: change.new_value, oldValue: change.old_value }));
 }
 
-export function toIntegration(client: ClientContext, data: APIIntegration, guildId: string): Integration {
-    const { application } = data;
-    return {
-        id: data.id,
-        guildId,
-        name: data.name,
-        type: data.type,
-        enabled: data.enabled,
-        accountId: data.account.id,
-        accountName: data.account.name,
-        user: data.user === undefined ? null : upsertUser(client, data.user),
-        syncing: data.syncing ?? false,
-        roleId: data.role_id ?? null,
-        enableEmoticons: data.enable_emoticons ?? false,
-        expireBehavior: data.expire_behavior ?? null,
-        expireGracePeriod: data.expire_grace_period ?? null,
-        syncedAt: parseTimestamp(data.synced_at ?? null),
-        subscriberCount: data.subscriber_count ?? null,
-        revoked: data.revoked ?? false,
-        application:
-            application === undefined
-                ? null
-                : {
-                      id: application.id,
-                      name: application.name,
-                      icon: application.icon,
-                      description: application.description,
-                      bot: application.bot === undefined ? null : upsertUser(client, application.bot)
-                  },
-        scopes: data.scopes ?? []
-    };
+export function toIntegrationApplication(client: ClientContext, data: APIIntegrationApplication): IntegrationApplication {
+    return { id: data.id, name: data.name, icon: data.icon, description: data.description, bot: data.bot === undefined ? null : upsertUser(client, data.bot) };
+}
+
+/** A member's permissions across the guild, from the owner check, `@everyone` and their roles. */
+export function computeGuildPermissions(guild: Guild, member: Member): bigint {
+    if (member.id === guild.ownerId) return ALL_PERMISSIONS;
+    let permissions = guild.roles.get(guild.id)?.permissions.allow ?? 0n;
+    for (const roleId of member.roles) permissions |= guild.roles.get(roleId)?.permissions.allow ?? 0n;
+    if ((permissions & Permissions.Administrator) !== 0n) return ALL_PERMISSIONS;
+    return member.timedOut ? permissions & TIMED_OUT_PERMISSIONS : permissions;
+}
+
+/**
+ * A member's permissions in a channel: the guild permissions with the `@everyone`, role and member overwrites
+ * applied in that order. A member who cannot view the channel has no permissions in it.
+ *
+ * @throws When the channel's guild, or the member given by id, is not cached.
+ */
+export function computeChannelPermissions(channel: GuildChannel, member: Member | string): bigint {
+    const guild = channel.guild;
+    if (guild === undefined) throw new Error(`Guild ${channel.guildId} is not cached`);
+    const resolved = typeof member === 'string' ? guild.members.get(member) : member;
+    if (resolved === undefined) throw new Error(`Member ${member as string} of guild ${guild.id} is not cached`);
+
+    let permissions = computeGuildPermissions(guild, resolved);
+    if ((permissions & Permissions.Administrator) !== 0n) return ALL_PERMISSIONS;
+    const overwrites = new Map(channel.permissionOverwrites.map((overwrite) => [overwrite.id, overwrite]));
+    const everyone = overwrites.get(guild.id);
+    if (everyone !== undefined) permissions = (permissions & ~everyone.deny) | everyone.allow;
+    let allow = 0n;
+    let deny = 0n;
+    for (const roleId of resolved.roles) {
+        const overwrite = overwrites.get(roleId);
+        if (overwrite?.type !== OverwriteTypes.Role) continue;
+        allow |= overwrite.allow;
+        deny |= overwrite.deny;
+    }
+    permissions = (permissions & ~deny) | allow;
+    const own = overwrites.get(resolved.id);
+    if (own?.type === OverwriteTypes.Member) permissions = (permissions & ~own.deny) | own.allow;
+    if (resolved.timedOut) permissions &= TIMED_OUT_PERMISSIONS;
+    return (permissions & Permissions.ViewChannel) === 0n ? 0n : permissions;
 }
 
 export function toSubscription(data: APISubscription): Subscription {
@@ -363,5 +411,18 @@ export function toVoiceChannelEffect(data: GatewayVoiceChannelEffectSendData): V
         animationId: data.animation_id ?? null,
         soundId: data.sound_id === undefined ? null : String(data.sound_id),
         soundVolume: data.sound_volume ?? null
+    };
+}
+
+export function toGuildAuditLog(client: ClientContext, data: APIGuildAuditLog, guildId: string): GuildAuditLog {
+    return {
+        entries: data.audit_log_entries.map((entry) => new GuildAuditLogEntry(client, entry, guildId)),
+        users: data.users.map((user) => upsertUser(client, user as APIUser)),
+        integrations: data.integrations.map((integration) => new GuildIntegration(client, integration as APIIntegration, guildId)),
+        webhooks: data.webhooks.map((webhook) => new Webhook(client, webhook as unknown as APIWebhook)),
+        threads: data.threads.map((thread) => upsertThread(client, thread as unknown as APIChannel, guildId)),
+        scheduledEvents: data.guild_scheduled_events.map((event) => upsertScheduledEvent(client, event as unknown as APIGuildScheduledEvent)),
+        autoModerationRules: data.auto_moderation_rules.filter((rule) => rule !== null).map((rule) => upsertAutoModerationRule(client, rule as unknown as APIAutoModerationRule)),
+        applicationCommands: data.application_commands.map((command) => new ApplicationCommand(client, command as unknown as APIApplicationCommand))
     };
 }

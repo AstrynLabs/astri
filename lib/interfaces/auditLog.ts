@@ -1,3 +1,5 @@
+import type { ApplicationCommand, AutoModerationRule, GuildAuditLogEntry, GuildIntegration, GuildScheduledEvent, ThreadChannel, User, Webhook } from '../core/structures';
+
 /** One field an audit logged action changed. Values are raw API values, keyed by the API's field name. */
 export interface AuditLogChange {
     key: string;
@@ -7,18 +9,16 @@ export interface AuditLogChange {
     oldValue: unknown;
 }
 
-/** An administrative action taken in a guild. */
-export interface AuditLogEntry {
-    id: string;
-    guildId: string;
-    /** One of {@link AuditLogEvents}, or a newer action. */
-    actionType: number;
-    /** Who took the action, or `null` for actions Discord took. */
-    userId: string | null;
-    /** What the action was taken on: a user, channel, role or other object depending on `actionType`. */
-    targetId: string | null;
-    changes: AuditLogChange[];
-    /** Extra details some action types carry, such as a pruned member count or the channel of a deleted message. */
-    options: Record<string, string>;
-    reason: string | null;
+/** A page of a guild's audit log, with the objects its entries refer to. */
+export interface GuildAuditLog {
+    entries: GuildAuditLogEntry[];
+    /** Users the entries refer to, cached as they are read. */
+    users: User[];
+    integrations: GuildIntegration[];
+    webhooks: Webhook[];
+    /** Threads the entries refer to, cached if their guild is. */
+    threads: ThreadChannel[];
+    scheduledEvents: GuildScheduledEvent[];
+    autoModerationRules: AutoModerationRule[];
+    applicationCommands: ApplicationCommand[];
 }

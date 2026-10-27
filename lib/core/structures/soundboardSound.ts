@@ -1,4 +1,4 @@
-import type { APISoundboardSound, ClientContext } from '../../types';
+import type { APISoundboardSound, ClientContext, SoundboardSoundEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
@@ -37,6 +37,22 @@ export class SoundboardSound extends Base {
         if (data.emoji_name !== undefined) this.emojiName = data.emoji_name;
         if (data.available !== undefined) this.available = data.available;
         if (data.user !== undefined) this.user = upsertUser(this.client, data.user);
+    }
+
+    /** Guild sounds only. Needs the manage expressions permission, or create expressions for sounds the client uploaded. */
+    async edit(data: SoundboardSoundEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('guildSoundboardSound', this.#guildId(), this.id, data, reason)) as APISoundboardSound);
+        return this;
+    }
+
+    /** Guild sounds only. Needs the manage expressions permission, or create expressions for sounds the client uploaded. */
+    async delete(reason?: string): Promise<void> {
+        await this.client.rest.delete('guildSoundboardSound', this.#guildId(), this.id, reason);
+    }
+
+    #guildId(): string {
+        if (this.guildId === null) throw new Error(`Soundboard sound ${this.id} is a default sound and does not belong to a guild`);
+        return this.guildId;
     }
 }
 

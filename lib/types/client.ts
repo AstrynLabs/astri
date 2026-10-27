@@ -1,7 +1,7 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
-import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, Guild, GuildScheduledEvent, Invite, Member, Message, Presence, Role, SoundboardSound, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
-import type { AuditLogEntry, AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, Integration, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji, Subscription, VoiceChannelEffect } from '../interfaces';
+import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, ExtendedUser, Guild, GuildAuditLogEntry, GuildIntegration, GuildScheduledEvent, Invite, Member, Message, Presence, Role, SoundboardSound, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
+import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji, Subscription, VoiceChannelEffect } from '../interfaces';
 import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
@@ -177,13 +177,13 @@ export interface ClientEvents {
     /** A guild changed who can use one of the application's commands, or all of them. */
     applicationCommandPermissionsUpdate: [permissions: GuildApplicationCommandPermissions];
     /** The client's own user changed. `old` is a shallow copy from before the update, or `null` if it was not known yet. */
-    userUpdate: [user: User, old: User | null];
+    userUpdate: [user: ExtendedUser, old: ExtendedUser | null];
     /** Needs the view audit log permission and the guild moderation intent. */
-    guildAuditLogEntryCreate: [entry: AuditLogEntry];
+    guildAuditLogEntryCreate: [entry: GuildAuditLogEntry];
     /** An integration in the guild was created, edited or deleted. Fetch the guild's integrations to see which. */
     guildIntegrationsUpdate: [guildId: string, guild: Guild | null];
-    integrationCreate: [integration: Integration];
-    integrationUpdate: [integration: Integration];
+    integrationCreate: [integration: GuildIntegration];
+    integrationUpdate: [integration: GuildIntegration];
     /** `applicationId` is set when the integration was a bot. */
     integrationDelete: [id: string, guildId: string, applicationId: string | null];
     guildSoundboardSoundCreate: [sound: SoundboardSound];
@@ -218,7 +218,7 @@ export interface ClientContext {
     readonly users: Cache<string, User>;
     readonly entitlements: Cache<string, Entitlement>;
     readonly rest: RequestHandler;
-    readonly user: User | null;
+    readonly user: ExtendedUser | null;
     readonly applicationId: string | null;
     /** Ids of guilds the client is in that have not arrived yet, or are in an outage. */
     readonly unavailableGuilds: Set<string>;

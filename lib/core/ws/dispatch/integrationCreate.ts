@@ -1,6 +1,6 @@
 import type { DispatchHandler } from '../../../types';
-import { toIntegration } from '../../structures/util';
+import { GuildIntegration } from '../../structures';
 
 export const integrationCreate: DispatchHandler<'INTEGRATION_CREATE'> = (client, data) => {
-    client.emit('integrationCreate', toIntegration(client, data, data.guild_id));
+    client.emit('integrationCreate', new GuildIntegration(client, data, data.guild_id));
 };

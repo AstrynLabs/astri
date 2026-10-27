@@ -3,10 +3,13 @@ import type { PinnedMessages } from '../../../interfaces';
 import type { APIChannel, APIThreadMember, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions, ThreadMemberFetchOptions } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Guild } from '../guild';
+import type { Member } from '../member';
 import type { Message } from '../message';
+import type { Permission } from '../permission';
 import { ThreadMember } from '../threadMember';
 import { bulkDeleteMessages, fetchMessage, fetchMessages, fetchPins, parseTimestamp, sendMessage } from '../util';
 import { Channel } from './channel';
+import { GuildChannel } from './guildChannel';
 
 /** Shared fields of every kind of thread. Threads are cached in their guild's `threads`, not `channels`. */
 export abstract class ThreadChannel extends Channel {
@@ -55,6 +58,17 @@ export abstract class ThreadChannel extends Channel {
     /** The guild this thread belongs to, if cached. */
     get guild(): Guild | undefined {
         return this.client.guilds.get(this.guildId);
+    }
+
+    /**
+     * A member's permissions in this thread, which are those of its parent channel.
+     *
+     * @throws When the parent channel, its guild, or the member given by id, is not cached.
+     */
+    permissionsOf(member: Member | string): Permission {
+        const parent = this.parentId === null ? undefined : this.guild?.channels.get(this.parentId);
+        if (!(parent instanceof GuildChannel)) throw new Error(`Parent channel of thread ${this.id} is not cached`);
+        return parent.permissionsOf(member);
     }
 
     /** The channel the thread was created in, if cached. */

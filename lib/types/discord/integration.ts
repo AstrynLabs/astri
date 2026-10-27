@@ -20,7 +20,8 @@ export interface APIIntegration {
     id: string;
     name: string | null;
     type: 'twitch' | 'youtube' | 'discord' | 'guild_subscription';
-    enabled: boolean;
+    /** Left out of audit logs. */
+    enabled?: boolean;
     account: APIIntegrationAccount;
     /** Twitch and YouTube only. */
     syncing?: boolean;

@@ -1,19 +1,22 @@
-import type { BulkBanResult, GuildBan } from '../../interfaces';
-import type { APIChannel, APIGuildBan, APIGuildEmoji, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData } from '../../types';
+import type { BulkBanResult, GuildAuditLog, GuildBan } from '../../interfaces';
+import type { APIChannel, APIGuildAuditLog, APIGuildBan, APIGuildEmoji, APIGuildPreview, APIGuildTemplate, APIIntegration, APISoundboardSound, AuditLogFetchOptions, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData, SoundboardSoundCreateData, TemplateCreateData } from '../../types';
 import type { Cache } from '../cache';
 import type { AutoModerationRule } from './autoModerationRule';
 import { Base } from './base';
 import { createChannel, createThreadChannel, upsertGuildChannel, type Channel, type ThreadChannel } from './channels';
 import { Emoji, upsertEmoji } from './emoji';
+import { GuildIntegration } from './guildIntegration';
+import { GuildPreview } from './guildPreview';
+import { GuildTemplate } from './guildTemplate';
 import { upsertInvite, type Invite } from './invite';
 import { Member, upsertMember } from './member';
 import { Presence } from './presence';
 import { Role, upsertRole } from './role';
 import { GuildScheduledEvent } from './scheduledEvent';
-import { SoundboardSound } from './soundboardSound';
+import { SoundboardSound, upsertSoundboardSound } from './soundboardSound';
 import { StageInstance } from './stageInstance';
 import { Sticker } from './sticker';
-import { toGuildBan } from './util';
+import { toGuildAuditLog, toGuildBan } from './util';
 import { VoiceState } from './voiceState';
 import { Webhook } from './webhook';
 
@@ -272,6 +275,44 @@ export class Guild extends Base {
     async fetchWebhooks(): Promise<Webhook[]> {
         const webhooks = await this.client.rest.get('guildWebhooks', this.id);
         return (webhooks as APIWebhook[]).map((webhook) => new Webhook(this.client, webhook));
+    }
+
+    /** Fetches a page of the audit log, newest first, with the users, threads and other objects it refers to. Needs the view audit log permission. */
+    async fetchAuditLog(options?: AuditLogFetchOptions): Promise<GuildAuditLog> {
+        return toGuildAuditLog(this.client, (await this.client.rest.get('guildAuditLogs', this.id, options)) as APIGuildAuditLog, this.id);
+    }
+
+    /** Needs the manage guild permission. */
+    async fetchIntegrations(): Promise<GuildIntegration[]> {
+        const integrations = await this.client.rest.get('guildIntegrations', this.id);
+        return (integrations as APIIntegration[]).map((integration) => new GuildIntegration(this.client, integration, this.id));
+    }
+
+    /** Fetches the guild's public preview, with approximate member and presence counts. */
+    async fetchPreview(): Promise<GuildPreview> {
+        return new GuildPreview(this.client, (await this.client.rest.get('guildPreview', this.id)) as APIGuildPreview);
+    }
+
+    /** Needs the manage guild permission. */
+    async fetchTemplates(): Promise<GuildTemplate[]> {
+        const templates = await this.client.rest.get('guildTemplates', this.id);
+        return (templates as APIGuildTemplate[]).map((template) => new GuildTemplate(this.client, template));
+    }
+
+    /** Needs the manage guild permission. */
+    async createTemplate(data: TemplateCreateData): Promise<GuildTemplate> {
+        return new GuildTemplate(this.client, (await this.client.rest.post('guildTemplate', this.id, data)) as APIGuildTemplate);
+    }
+
+    /** Fetches every soundboard sound and caches them. Needs the guild expressions intent or the manage expressions permission. */
+    async fetchSoundboardSounds(): Promise<SoundboardSound[]> {
+        const { items } = await this.client.rest.get('guildSoundboardSounds', this.id);
+        return (items as APISoundboardSound[]).map((sound) => upsertSoundboardSound(this.client, sound, this.id));
+    }
+
+    /** Needs the create expressions permission. */
+    async createSoundboardSound(data: SoundboardSoundCreateData, reason?: string): Promise<SoundboardSound> {
+        return upsertSoundboardSound(this.client, (await this.client.rest.post('guildSoundboardSound', this.id, data, reason)) as APISoundboardSound, this.id);
     }
 }
 

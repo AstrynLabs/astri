@@ -9,6 +9,7 @@ import { upsertMessage, type Message } from '../message';
 import { upsertUser, type User } from '../user';
 import { splitFiles } from '../util';
 import { messageBody, resolveChannel } from './util';
+import { Permission } from '../permission';
 
 type InteractionCallbackBody = RESTBody<'/interactions/{interaction_id}/{interaction_token}/callback', 'post'>;
 
@@ -34,9 +35,9 @@ export abstract class Interaction extends Base {
     /** Guild interactions only. */
     readonly member: Member | null;
     /** The member's permissions in the channel, overwrites included. Guild interactions only. */
-    readonly memberPermissions: bigint | null;
+    readonly memberPermissions: Permission | null;
     /** The application's permissions in the channel. */
-    readonly appPermissions: bigint;
+    readonly appPermissions: Permission;
     /** The user's language. */
     readonly locale: string | null;
     /** The guild's preferred language. Guild interactions only. */
@@ -62,8 +63,8 @@ export abstract class Interaction extends Base {
         this.channel = data.channel === undefined ? null : resolveChannel(client, data.channel, this.guildId);
         this.member = data.member === undefined || this.guildId === null ? null : upsertMember(client, data.member, this.guildId);
         this.user = this.member?.user ?? upsertUser(client, data.user!);
-        this.memberPermissions = data.member === undefined ? null : BigInt(data.member.permissions);
-        this.appPermissions = BigInt(data.app_permissions);
+        this.memberPermissions = data.member === undefined ? null : new Permission(data.member.permissions);
+        this.appPermissions = new Permission(data.app_permissions);
         this.locale = data.locale ?? null;
         this.guildLocale = data.guild_locale ?? null;
         this.context = data.context ?? null;

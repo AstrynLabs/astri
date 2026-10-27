@@ -1,12 +1,3 @@
-export interface PermissionOverwrite {
-    /** Role or user id. */
-    id: string;
-    /** `0` for a role, `1` for a member. */
-    type: 0 | 1;
-    allow: bigint;
-    deny: bigint;
-}
-
 export interface ForumTag {
     id: string;
     name: string;

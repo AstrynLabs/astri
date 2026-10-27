@@ -1,12 +1,12 @@
 import { EventEmitter } from 'eventemitter3';
 import { IDENTIFY_WINDOW, MEMBER_REQUEST_TIMEOUT } from '../../constants';
 import type { GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest } from '../../interfaces';
-import type { APIApplicationCommand, APIChannel, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayPresenceUpdateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions, PresenceOptions, RequestGuildMembersOptions, VoiceStateOptions } from '../../types';
+import type { APIApplicationCommand, APIChannel, APICurrentUser, APIGuildPreview, APIGuildTemplate, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayPresenceUpdateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions, PresenceOptions, RequestGuildMembersOptions, VoiceStateOptions } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
 import { RequestHandler } from '../rest';
-import type { Channel, Entitlement, Member, User } from '../structures';
-import { ApplicationCommand, Guild, upsertChannel, upsertUser } from '../structures';
+import type { Channel, Entitlement, ExtendedUser, Member, User } from '../structures';
+import { ApplicationCommand, Guild, GuildPreview, GuildTemplate, upsertChannel, upsertExtendedUser, upsertUser } from '../structures';
 import { toCommandPermissions } from '../structures/util';
 import { handleDispatch, Shard } from '../ws';
 
@@ -22,7 +22,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     readonly rest: RequestHandler;
     readonly unavailableGuilds = new Set<string>();
     readonly shards = new Map<number, Shard>();
-    user: User | null = null;
+    user: ExtendedUser | null = null;
     /** The bot's application id, known after the first `READY` or the first command call. */
     applicationId: string | null = null;
 
@@ -258,6 +258,16 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         return cached;
     }
 
+    /** Fetches the public preview of a guild the client is in, or of any discoverable guild. */
+    async fetchGuildPreview(guildId: string): Promise<GuildPreview> {
+        return new GuildPreview(this, (await this.rest.get('guildPreview', guildId)) as APIGuildPreview);
+    }
+
+    /** Fetches a guild template by code. */
+    async fetchTemplate(code: string): Promise<GuildTemplate> {
+        return new GuildTemplate(this, (await this.rest.get('template', code)) as APIGuildTemplate);
+    }
+
     /** Fetches the global commands, or a guild's commands when `guildId` is given. */
     async fetchCommands(guildId?: string, options?: ApplicationCommandFetchOptions): Promise<ApplicationCommand[]> {
         const applicationId = await this.#resolveApplicationId();
@@ -361,7 +371,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     }
 
     #onShardReady(shard: Shard, data: GatewayReadyData): void {
-        this.user = upsertUser(this, data.user as unknown as APIUser);
+        this.user = upsertExtendedUser(this, data.user as unknown as APICurrentUser);
         this.applicationId = data.application.id;
         for (const guild of data.guilds) this.unavailableGuilds.add(guild.id);
         this.emit('shardReady', shard, data);

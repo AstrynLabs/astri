@@ -1,6 +1,6 @@
 import type { DispatchHandler } from '../../../types';
-import { toAuditLogEntry } from '../../structures/util';
+import { GuildAuditLogEntry } from '../../structures';
 
 export const guildAuditLogEntryCreate: DispatchHandler<'GUILD_AUDIT_LOG_ENTRY_CREATE'> = (client, data) => {
-    client.emit('guildAuditLogEntryCreate', toAuditLogEntry(data));
+    client.emit('guildAuditLogEntryCreate', new GuildAuditLogEntry(client, data, data.guild_id));
 };
