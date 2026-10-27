@@ -1,6 +1,7 @@
 import type { APIGuildEmoji } from './emoji';
 import type { APIRole } from './role';
 import type { APISticker } from './sticker';
+import type { APIUser } from './user';
 
 export interface APIGuild {
     id: string;
@@ -32,6 +33,11 @@ export interface APIGuild {
     vanity_url_code: string | null;
     preferred_locale: string;
     max_members?: number;
+}
+
+export interface APIGuildBan {
+    user: APIUser;
+    reason: string | null;
 }
 
 /** A guild the client is in but cannot see, either during startup or because of an outage. */

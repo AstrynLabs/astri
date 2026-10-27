@@ -1,4 +1,4 @@
-import type { APIGuildEmoji, ClientContext } from '../../types';
+import type { APIGuildEmoji, ClientContext, EmojiEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
@@ -37,4 +37,28 @@ export class Emoji extends Base {
         if (data.animated !== undefined) this.animated = data.animated;
         if (data.available !== undefined) this.available = data.available;
     }
+
+    /** Needs the manage expressions permission, or create expressions for emojis the client uploaded. */
+    async edit(data: EmojiEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('guildEmoji', this.guildId, this.id, data, reason)) as APIGuildEmoji);
+        return this;
+    }
+
+    /** Needs the manage expressions permission, or create expressions for emojis the client uploaded. */
+    async delete(reason?: string): Promise<void> {
+        await this.client.rest.delete('guildEmoji', this.guildId, this.id, reason);
+    }
+}
+
+/** The guild's cached emoji for `data.id` patched with `data`, or a new one, cached if its guild is. */
+export function upsertEmoji(client: ClientContext, data: APIGuildEmoji, guildId: string): Emoji {
+    const emojis = client.guilds.get(guildId)?.emojis;
+    const cached = emojis?.get(data.id);
+    if (cached !== undefined) {
+        cached.patch(data);
+        return cached;
+    }
+    const created = new Emoji(client, data, guildId);
+    emojis?.set(created.id, created);
+    return created;
 }

@@ -1,6 +1,6 @@
 import { MessageFlags } from '../../constants';
 import type { MessageReaction, Poll } from '../../interfaces';
-import type { APIChannel, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, TextBasedChannel } from '../../types';
+import type { APIChannel, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, MessageThreadCreateData, TextBasedChannel } from '../../types';
 import { Collection } from '../cache';
 import { Attachment } from './attachment';
 import { Base } from './base';
@@ -160,6 +160,13 @@ export class Message extends Base {
     async crosspost(): Promise<this> {
         this.patch(await this.client.rest.post('channelMessageCrosspost', this.channelId, this.id));
         return this;
+    }
+
+    /** Guild messages only: starts a thread from the message. Needs the create public threads permission. */
+    async startThread(data: MessageThreadCreateData, reason?: string): Promise<ThreadChannel> {
+        if (this.guildId === null) throw new Error(`Message ${this.id} is not in a guild, so no thread can be started from it`);
+        const thread = await this.client.rest.post('channelMessageThreads', this.channelId, this.id, data, reason);
+        return upsertThread(this.client, thread as unknown as APIChannel, this.guildId);
     }
 }
 

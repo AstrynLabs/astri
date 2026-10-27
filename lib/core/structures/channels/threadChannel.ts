@@ -1,10 +1,11 @@
 import type { ChannelTypes } from '../../../constants';
-import type { APIChannel, APIThreadMember, ClientContext } from '../../../types';
+import type { PinnedMessages } from '../../../interfaces';
+import type { APIChannel, APIThreadMember, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions, ThreadMemberFetchOptions } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Guild } from '../guild';
 import type { Message } from '../message';
 import { ThreadMember } from '../threadMember';
-import { parseTimestamp } from '../util';
+import { bulkDeleteMessages, fetchMessage, fetchMessages, fetchPins, parseTimestamp, sendMessage } from '../util';
 import { Channel } from './channel';
 
 /** Shared fields of every kind of thread. Threads are cached in their guild's `threads`, not `channels`. */
@@ -84,6 +85,67 @@ export abstract class ThreadChannel extends Channel {
             const userId = data.member.user_id ?? this.client.user?.id;
             if (userId !== undefined) upsertThreadMember(this, data.member, userId);
         }
+    }
+
+    /** Sends a message. Needs the send messages permission. */
+    send(data: string | MessageCreateData): Promise<Message> {
+        return sendMessage(this.client, this.id, this.guildId, data);
+    }
+
+    /** Fetches one message. Needs the read message history permission. */
+    fetchMessage(messageId: string): Promise<Message> {
+        return fetchMessage(this.client, this.id, this.guildId, messageId);
+    }
+
+    /** Fetches up to 100 messages, newest first. Needs the read message history permission. */
+    fetchMessages(options?: MessageFetchOptions): Promise<Message[]> {
+        return fetchMessages(this.client, this.id, this.guildId, options);
+    }
+
+    /** Fetches one page of pins, newest first. */
+    fetchPins(options?: PinFetchOptions): Promise<PinnedMessages> {
+        return fetchPins(this.client, this.id, this.guildId, options);
+    }
+
+    /** Shows the client as typing for 10 seconds, or until it sends a message. */
+    async sendTyping(): Promise<void> {
+        await this.client.rest.post('channelTyping', this.id);
+    }
+
+    /** Deletes up to 100 messages younger than two weeks. Needs the manage messages permission. */
+    bulkDelete(messageIds: string[], reason?: string): Promise<void> {
+        return bulkDeleteMessages(this.client, this.id, messageIds, reason);
+    }
+
+    /** Adds the client's own user to the thread. Unarchives it if needed. */
+    async join(): Promise<void> {
+        await this.client.rest.put('channelCurrentThreadMember', this.id);
+    }
+
+    async leave(): Promise<void> {
+        await this.client.rest.delete('channelCurrentThreadMember', this.id);
+    }
+
+    /** Needs the ability to send messages in the thread. Private threads also need the client to be a member. */
+    async addMember(userId: string): Promise<void> {
+        await this.client.rest.put('channelThreadMember', this.id, userId);
+    }
+
+    /** Needs the manage threads permission, or to be the creator of a private thread. */
+    async removeMember(userId: string): Promise<void> {
+        await this.client.rest.delete('channelThreadMember', this.id, userId);
+    }
+
+    /** Fetches one member and caches it on the thread. Needs the guild members intent. */
+    async fetchMember(userId: string): Promise<ThreadMember> {
+        const member = await this.client.rest.get('channelThreadMember', this.id, userId);
+        return upsertThreadMember(this, member as APIThreadMember, userId);
+    }
+
+    /** Fetches members, in user id order, and caches them on the thread. Needs the guild members intent. */
+    async fetchMembers(options?: ThreadMemberFetchOptions): Promise<ThreadMember[]> {
+        const members = await this.client.rest.get('channelThreadMembers', this.id, options);
+        return members.map((member) => upsertThreadMember(this, member as APIThreadMember, member.user_id));
     }
 }
 

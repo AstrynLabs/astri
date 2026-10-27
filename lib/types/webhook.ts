@@ -21,3 +21,6 @@ export interface WebhookMessageEditData extends WebhookUpdateRequest {
     /** Uploaded alongside the message. Reference them from `attachments` or embeds as `attachment://<name>`. */
     files?: RESTFile[];
 }
+
+/** A new incoming webhook. `avatar` is a data URI. */
+export type WebhookCreateData = RESTBody<'/channels/{channel_id}/webhooks', 'post'>;

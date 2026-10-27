@@ -1,4 +1,4 @@
-import type { APIGuildMember, ClientContext } from '../../types';
+import type { APIGuildMember, BanOptions, ClientContext, MemberEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
@@ -53,6 +53,45 @@ export class Member extends Base {
         if (data.flags !== undefined) this.flags = data.flags;
         if (data.pending !== undefined) this.pending = data.pending;
         if (data.communication_disabled_until !== undefined) this.communicationDisabledUntil = parseTimestamp(data.communication_disabled_until);
+    }
+
+    /** Each field needs its own permission: manage nicknames, manage roles, mute or deafen members, move members, or moderate members. */
+    async edit(data: MemberEditData, reason?: string): Promise<this> {
+        const member = await this.client.rest.patch('guildMember', this.guildId, this.id, data, reason);
+        if (member !== undefined) this.patch(member as APIGuildMember);
+        return this;
+    }
+
+    /** `null` resets it. The client's own nickname needs change nickname; anyone else's needs manage nicknames. */
+    async setNickname(nick: string | null, reason?: string): Promise<this> {
+        if (this.id !== this.client.user?.id) return this.edit({ nick }, reason);
+        this.patch((await this.client.rest.patch('guildCurrentMember', this.guildId, { nick }, reason)) as APIGuildMember);
+        return this;
+    }
+
+    /** Times the member out until `until` (Unix ms or a date, at most 28 days away), or lifts it with `null`. Needs the moderate members permission. */
+    timeout(until: number | Date | null, reason?: string): Promise<this> {
+        return this.edit({ communication_disabled_until: until === null ? null : new Date(until).toISOString() }, reason);
+    }
+
+    /** Needs the manage roles permission, and the role must be below the client's highest role. */
+    async addRole(roleId: string, reason?: string): Promise<void> {
+        await this.client.rest.put('guildMemberRole', this.guildId, this.id, roleId, reason);
+    }
+
+    /** Needs the manage roles permission, and the role must be below the client's highest role. */
+    async removeRole(roleId: string, reason?: string): Promise<void> {
+        await this.client.rest.delete('guildMemberRole', this.guildId, this.id, roleId, reason);
+    }
+
+    /** Needs the kick members permission. */
+    async kick(reason?: string): Promise<void> {
+        await this.client.rest.delete('guildMember', this.guildId, this.id, reason);
+    }
+
+    /** Needs the ban members permission. */
+    async ban(options: BanOptions = {}, reason?: string): Promise<void> {
+        await this.client.rest.put('guildBan', this.guildId, this.id, options, reason);
     }
 }
 

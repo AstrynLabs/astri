@@ -1,17 +1,20 @@
-import type { ClientContext, GatewayGuildCreateData } from '../../types';
+import type { BulkBanResult, GuildBan } from '../../interfaces';
+import type { APIChannel, APIGuildBan, APIGuildEmoji, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData } from '../../types';
 import type { Cache } from '../cache';
 import type { AutoModerationRule } from './autoModerationRule';
 import { Base } from './base';
-import { createChannel, createThreadChannel, type Channel, type ThreadChannel } from './channels';
-import { Emoji } from './emoji';
-import type { Invite } from './invite';
-import { Member } from './member';
+import { createChannel, createThreadChannel, upsertGuildChannel, type Channel, type ThreadChannel } from './channels';
+import { Emoji, upsertEmoji } from './emoji';
+import { upsertInvite, type Invite } from './invite';
+import { Member, upsertMember } from './member';
 import { Presence } from './presence';
-import { Role } from './role';
+import { Role, upsertRole } from './role';
 import { GuildScheduledEvent } from './scheduledEvent';
 import { StageInstance } from './stageInstance';
 import { Sticker } from './sticker';
+import { toGuildBan } from './util';
 import { VoiceState } from './voiceState';
+import { Webhook } from './webhook';
 
 export class Guild extends Base {
     name: string;
@@ -163,6 +166,102 @@ export class Guild extends Base {
                 else this.members.set(member.user.id, new Member(this.client, member, this.id));
             }
         }
+    }
+
+    /** Needs the manage guild permission. */
+    async edit(data: GuildEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('guild', this.id, data, reason)) as Partial<GatewayGuildCreateData>);
+        return this;
+    }
+
+    /** Makes the client leave the guild. The owner cannot leave. */
+    async leave(): Promise<void> {
+        await this.client.rest.delete('currentUserGuild', this.id);
+    }
+
+    /** Needs the manage channels permission. */
+    async createChannel(data: GuildChannelCreateData, reason?: string): Promise<Channel> {
+        return upsertGuildChannel(this.client, (await this.client.rest.post('guildChannels', this.id, data, reason)) as APIChannel, this.id);
+    }
+
+    /** Needs the manage roles permission. */
+    async createRole(data: RoleCreateData = {}, reason?: string): Promise<Role> {
+        return upsertRole(this.client, (await this.client.rest.post('guildRole', this.id, data, reason)) as APIRole, this.id);
+    }
+
+    /** Needs the create expressions permission. */
+    async createEmoji(data: EmojiCreateData, reason?: string): Promise<Emoji> {
+        return upsertEmoji(this.client, (await this.client.rest.post('guildEmoji', this.id, data, reason)) as APIGuildEmoji, this.id);
+    }
+
+    /** Fetches one member and caches it. */
+    async fetchMember(userId: string): Promise<Member> {
+        return upsertMember(this.client, (await this.client.rest.get('guildMember', this.id, userId)) as APIGuildMember, this.id);
+    }
+
+    /** Fetches up to 1000 members in user id order and caches them. Needs the guild members intent. */
+    async fetchMembers(options?: MemberFetchOptions): Promise<Member[]> {
+        const members = await this.client.rest.get('guildMembers', this.id, options);
+        return (members as APIGuildMember[]).map((member) => upsertMember(this.client, member, this.id));
+    }
+
+    /** Fetches up to `limit` (1-1000, 1 by default) members whose username or nickname starts with `query`, and caches them. */
+    async searchMembers(query: string, limit?: number): Promise<Member[]> {
+        const members = await this.client.rest.get('guildMembersSearch', this.id, { query, limit });
+        return (members as APIGuildMember[]).map((member) => upsertMember(this.client, member, this.id));
+    }
+
+    /** Bans a user, member or not. Needs the ban members permission. */
+    async ban(userId: string, options: BanOptions = {}, reason?: string): Promise<void> {
+        await this.client.rest.put('guildBan', this.id, userId, options, reason);
+    }
+
+    /** Bans up to 200 users at once. Needs the ban members and manage guild permissions. */
+    async bulkBan(data: BulkBanData, reason?: string): Promise<BulkBanResult> {
+        const result = await this.client.rest.post('guildBulkBan', this.id, data, reason);
+        return { bannedUsers: result.banned_users, failedUsers: result.failed_users };
+    }
+
+    /** Needs the ban members permission. */
+    async unban(userId: string, reason?: string): Promise<void> {
+        await this.client.rest.delete('guildBan', this.id, userId, {}, reason);
+    }
+
+    /** Needs the ban members permission. */
+    async fetchBan(userId: string): Promise<GuildBan> {
+        return toGuildBan(this.client, (await this.client.rest.get('guildBan', this.id, userId)) as APIGuildBan);
+    }
+
+    /** Fetches up to 1000 bans in user id order. Needs the ban members permission. */
+    async fetchBans(options?: BanFetchOptions): Promise<GuildBan[]> {
+        const bans = await this.client.rest.get('guildBans', this.id, options);
+        return ((bans ?? []) as APIGuildBan[]).map((ban) => toGuildBan(this.client, ban));
+    }
+
+    /** How many members a prune with the same options would kick. Needs the manage guild and kick members permissions. */
+    async fetchPruneCount(options?: PruneCountOptions): Promise<number> {
+        const result = await this.client.rest.get('guildPrune', this.id, options);
+        return result.pruned ?? 0;
+    }
+
+    /**
+     * Kicks inactive members. Needs the manage guild and kick members permissions. Resolves to how many were kicked, or
+     * `null` with `compute_prune_count: false`, which large guilds should pass.
+     */
+    async prune(options: PruneOptions = {}, reason?: string): Promise<number | null> {
+        return (await this.client.rest.post('guildPrune', this.id, options, reason)).pruned;
+    }
+
+    /** Needs the manage guild permission. */
+    async fetchInvites(): Promise<Invite[]> {
+        const invites = await this.client.rest.get('guildInvites', this.id);
+        return (invites as APIInvite[]).map((invite) => upsertInvite(this.client, invite));
+    }
+
+    /** Needs the manage webhooks permission. */
+    async fetchWebhooks(): Promise<Webhook[]> {
+        const webhooks = await this.client.rest.get('guildWebhooks', this.id);
+        return (webhooks as APIWebhook[]).map((webhook) => new Webhook(this.client, webhook));
     }
 }
 

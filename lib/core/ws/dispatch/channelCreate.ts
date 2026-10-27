@@ -1,9 +1,8 @@
 import type { DispatchHandler } from '../../../types';
-import { createChannel } from '../../structures';
+import { createChannel, upsertGuildChannel } from '../../structures';
 
 export const channelCreate: DispatchHandler<'CHANNEL_CREATE'> = (client, data) => {
     const guildId = data.guild_id ?? null;
-    const channel = createChannel(client, data, guildId);
-    if (guildId !== null) client.guilds.get(guildId)?.channels.set(channel.id, channel);
+    const channel = guildId === null ? createChannel(client, data, null) : upsertGuildChannel(client, data, guildId);
     client.emit('channelCreate', channel);
 };

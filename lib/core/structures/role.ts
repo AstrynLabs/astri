@@ -1,4 +1,4 @@
-import type { APIRole, ClientContext } from '../../types';
+import type { APIRole, ClientContext, RoleEditData } from '../../types';
 import { Base } from './base';
 import type { Guild } from './guild';
 
@@ -39,4 +39,28 @@ export class Role extends Base {
         if (data.mentionable !== undefined) this.mentionable = data.mentionable;
         if (data.flags !== undefined) this.flags = data.flags;
     }
+
+    /** Needs the manage roles permission, and the role must be below the client's highest role. */
+    async edit(data: RoleEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('guildRole', this.guildId, this.id, data, reason)) as APIRole);
+        return this;
+    }
+
+    /** Needs the manage roles permission, and the role must be below the client's highest role. */
+    async delete(reason?: string): Promise<void> {
+        await this.client.rest.delete('guildRole', this.guildId, this.id, reason);
+    }
+}
+
+/** The guild's cached role for `data.id` patched with `data`, or a new one, cached if its guild is. */
+export function upsertRole(client: ClientContext, data: APIRole, guildId: string): Role {
+    const roles = client.guilds.get(guildId)?.roles;
+    const cached = roles?.get(data.id);
+    if (cached !== undefined) {
+        cached.patch(data);
+        return cached;
+    }
+    const created = new Role(client, data, guildId);
+    roles?.set(created.id, created);
+    return created;
 }

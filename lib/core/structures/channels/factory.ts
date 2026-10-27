@@ -74,3 +74,19 @@ export function upsertThread(client: ClientContext, data: APIChannel, guildId: s
     threads?.set(created.id, created);
     return created;
 }
+
+/**
+ * The guild's cached channel for `data.id` patched with `data`, or a new one, cached if its guild is. A cached
+ * channel of another type is replaced.
+ */
+export function upsertGuildChannel(client: ClientContext, data: APIChannel, guildId: string): Channel {
+    const channels = client.guilds.get(guildId)?.channels;
+    const cached = channels?.get(data.id);
+    if (cached !== undefined && cached.type === data.type) {
+        cached.patch(data);
+        return cached;
+    }
+    const created = createChannel(client, data, guildId);
+    channels?.set(created.id, created);
+    return created;
+}

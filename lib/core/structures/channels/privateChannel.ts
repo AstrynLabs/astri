@@ -1,9 +1,10 @@
 import type { ChannelTypes } from '../../../constants';
-import type { APIChannel, ClientContext } from '../../../types';
+import type { PinnedMessages } from '../../../interfaces';
+import type { APIChannel, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Message } from '../message';
 import { upsertUser, type User } from '../user';
-import { parseTimestamp } from '../util';
+import { fetchMessage, fetchMessages, fetchPins, parseTimestamp, sendMessage } from '../util';
 import { Channel } from './channel';
 
 /** Shared fields of DMs and group DMs. */
@@ -26,6 +27,31 @@ export abstract class PrivateChannel extends Channel {
         if (data.recipients !== undefined) this.recipients = data.recipients.map((user) => upsertUser(this.client, user));
         if (data.last_message_id !== undefined) this.lastMessageId = data.last_message_id;
         if (data.last_pin_timestamp !== undefined) this.lastPinTimestamp = parseTimestamp(data.last_pin_timestamp);
+    }
+
+    /** Sends a message. Needs the send messages permission. */
+    send(data: string | MessageCreateData): Promise<Message> {
+        return sendMessage(this.client, this.id, null, data);
+    }
+
+    /** Fetches one message. Needs the read message history permission. */
+    fetchMessage(messageId: string): Promise<Message> {
+        return fetchMessage(this.client, this.id, null, messageId);
+    }
+
+    /** Fetches up to 100 messages, newest first. Needs the read message history permission. */
+    fetchMessages(options?: MessageFetchOptions): Promise<Message[]> {
+        return fetchMessages(this.client, this.id, null, options);
+    }
+
+    /** Fetches one page of pins, newest first. */
+    fetchPins(options?: PinFetchOptions): Promise<PinnedMessages> {
+        return fetchPins(this.client, this.id, null, options);
+    }
+
+    /** Shows the client as typing for 10 seconds, or until it sends a message. */
+    async sendTyping(): Promise<void> {
+        await this.client.rest.post('channelTyping', this.id);
     }
 }
 

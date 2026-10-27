@@ -1,6 +1,7 @@
-import type { Activity, ApplicationCommandOption, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, InviteGuild, MessageReaction, Poll, ReactionEmoji, RecurrenceRule } from '../../interfaces';
-import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, RESTFile, TextBasedChannel } from '../../types';
-import type { Message } from './message';
+import type { Activity, ApplicationCommandOption, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildBan, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule } from '../../interfaces';
+import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIGuildBan, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, MessageCreateData, MessageFetchOptions, PinFetchOptions, RESTFile, TextBasedChannel } from '../../types';
+import { upsertMessage, type Message } from './message';
+import { upsertUser } from './user';
 
 export function parseTimestamp(value: string | null): number | null {
     return value === null ? null : Date.parse(value);
@@ -252,4 +253,41 @@ export function toInviteGuild(data: APIInviteGuild): InviteGuild {
         nsfwLevel: data.nsfw_level,
         premiumSubscriptionCount: data.premium_subscription_count
     };
+}
+
+/** Sends a message to a channel, thread or DM. */
+export async function sendMessage(client: ClientContext, channelId: string, guildId: string | null, data: string | MessageCreateData): Promise<Message> {
+    const [body, files] = splitFiles(data);
+    return upsertMessage(client, await client.rest.post('channelMessage', channelId, body, { files }), guildId);
+}
+
+export async function fetchMessage(client: ClientContext, channelId: string, guildId: string | null, messageId: string): Promise<Message> {
+    return upsertMessage(client, await client.rest.get('channelMessage', channelId, messageId), guildId);
+}
+
+export async function fetchMessages(client: ClientContext, channelId: string, guildId: string | null, options: MessageFetchOptions = {}): Promise<Message[]> {
+    const messages = await client.rest.get('channelMessages', channelId, options);
+    return (messages ?? []).map((message) => upsertMessage(client, message, guildId));
+}
+
+export async function fetchPins(client: ClientContext, channelId: string, guildId: string | null, options: PinFetchOptions = {}): Promise<PinnedMessages> {
+    const pins = await client.rest.get('channelMessagesPins', channelId, options);
+    return {
+        items: pins.items.map((pin) => ({ message: upsertMessage(client, pin.message, guildId), pinnedAt: Date.parse(pin.pinned_at) })),
+        hasMore: pins.has_more
+    };
+}
+
+/**
+ * Deletes up to 100 messages at once. Messages older than two weeks cannot be bulk deleted. A single id is deleted
+ * on its own, since the bulk route needs at least two.
+ */
+export async function bulkDeleteMessages(client: ClientContext, channelId: string, messageIds: string[], reason?: string): Promise<void> {
+    if (messageIds.length === 0) return;
+    if (messageIds.length === 1) await client.rest.delete('channelMessage', channelId, messageIds[0], reason);
+    else await client.rest.post('channelMessagesBulkDelete', channelId, { messages: messageIds }, reason);
+}
+
+export function toGuildBan(client: ClientContext, data: APIGuildBan): GuildBan {
+    return { user: upsertUser(client, data.user), reason: data.reason };
 }

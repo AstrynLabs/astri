@@ -1,3 +1,5 @@
+import type { Message } from '../core/structures';
+
 /** An emoji in a reaction or poll. Custom emojis have an `id`; unicode ones only a `name`, the emoji itself. */
 export interface ReactionEmoji {
     id: string | null;
@@ -60,4 +62,17 @@ export interface MessageReactionAddEvent extends MessageReactionEvent {
     messageAuthorId: string | null;
     /** Super reactions only: hex colors used to render the animation. */
     burstColors: string[];
+}
+
+export interface PinnedMessage {
+    message: Message;
+    /** Unix ms. */
+    pinnedAt: number;
+}
+
+/** One page of a channel's pins, newest first. */
+export interface PinnedMessages {
+    items: PinnedMessage[];
+    /** Whether older pins are left. Pass the last item's `pinnedAt` as `before` to fetch them. */
+    hasMore: boolean;
 }

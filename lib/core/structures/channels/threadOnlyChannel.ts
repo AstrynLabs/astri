@@ -1,7 +1,10 @@
 import type { ChannelTypes } from '../../../constants';
 import type { DefaultReaction, ForumTag } from '../../../interfaces';
-import type { APIChannel, APIForumTag, ClientContext } from '../../../types';
+import type { APIChannel, APIForumTag, ClientContext, ForumPostCreateData } from '../../../types';
+import { splitFiles } from '../util';
+import { upsertThread } from './factory';
 import { GuildChannel } from './guildChannel';
+import type { ThreadChannel } from './threadChannel';
 
 /** Shared fields of forum and media channels, which only hold threads (posts). */
 export abstract class ThreadOnlyChannel extends GuildChannel {
@@ -31,6 +34,13 @@ export abstract class ThreadOnlyChannel extends GuildChannel {
         if (data.available_tags !== undefined) this.availableTags = data.available_tags.map(toForumTag);
         if (data.default_reaction_emoji !== undefined) this.defaultReactionEmoji = data.default_reaction_emoji === null ? null : { emojiId: data.default_reaction_emoji.emoji_id, emojiName: data.default_reaction_emoji.emoji_name };
         if (data.default_sort_order !== undefined) this.defaultSortOrder = data.default_sort_order;
+    }
+
+    /** Creates a post with its starter message. Needs the send messages permission. */
+    async createPost(data: ForumPostCreateData, reason?: string): Promise<ThreadChannel> {
+        const [body, files] = splitFiles(data);
+        const thread = await this.client.rest.post('channelThreads', this.id, body, { files, reason });
+        return upsertThread(this.client, thread as APIChannel, this.guildId);
     }
 }
 

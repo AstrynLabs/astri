@@ -1,5 +1,5 @@
 import type { ChannelTypes } from '../../../constants';
-import type { APIChannel, ClientContext } from '../../../types';
+import type { APIChannel, ChannelEditData, ClientContext } from '../../../types';
 import { Base } from '../base';
 
 /**
@@ -20,6 +20,17 @@ export abstract class Channel extends Base {
     /** Applies a payload. Fields missing from `data`, and fields that do not apply to this type, are ignored. */
     patch(data: Partial<APIChannel>): void {
         if (data.flags !== undefined) this.flags = data.flags;
+    }
+
+    /** Needs the manage channels permission, or manage threads for threads the client did not create. */
+    async edit(data: ChannelEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('channel', this.id, data, reason)) as APIChannel);
+        return this;
+    }
+
+    /** Deletes a guild channel or thread, or closes a DM. Needs the manage channels permission, or manage threads for threads. */
+    async delete(reason?: string): Promise<void> {
+        await this.client.rest.delete('channel', this.id, reason);
     }
 }
 

@@ -2,6 +2,7 @@ export * from './applicationCommand';
 export * from './autoModeration';
 export * from './channel';
 export * from './embed';
+export * from './guild';
 export * from './invite';
 export * from './message';
 export * from './presence';
