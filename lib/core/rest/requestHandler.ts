@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
-import pkg from '../../../package.json';
+import { version } from '../../../package.json';
 import { API_VERSION, BUCKET_SWEEP_INTERVAL, DEFAULT_API_URL, DEFAULT_GLOBAL_RATE_LIMIT, DEFAULT_REST_RETRIES, DEFAULT_REST_TIMEOUT, GLOBAL_RATE_LIMIT_WINDOW, RATE_LIMIT_MAJOR_PARAMS, RESTRoutes, ROUTE_PLACEHOLDER_PATTERN, TOKEN_ROUTE_PATTERN } from '../../constants';
 import type { RESTArgs, RESTEvents, RESTMethod, RESTNamedRoute, RESTOptions, RESTRawRequestOptions, RESTRequestArgs, RESTResponse, RESTRoute, RESTRouteEntry, RESTRouteMethod, RESTRouteName, RESTRouteNameFor } from '../../types';
 import { Bucket } from './bucket';
@@ -26,7 +26,7 @@ export class RequestHandler extends EventEmitter<RESTEvents> {
     readonly #timeout: number;
     readonly #retries: number;
     readonly #globalLimit: number;
-    readonly #userAgent = `Astri-ts (https://github.com/FireGamer3/astri-ts, ${pkg.version})`;
+    readonly #userAgent = `Astri-ts (https://github.com/FireGamer3/astri-ts, ${version})`;
     readonly #buckets = new Map<string, Bucket>();
     readonly #hashes = new Map<string, string>();
     #globalRemaining: number;

@@ -1,0 +1,11 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["lib/index.ts"],
+    "out": "docs",
+    "name": "astri-ts",
+    "readme": "README.md",
+    "excludePrivate": true,
+    "excludeInternal": true,
+    "externalPattern": ["**/node_modules/**", "**/lib/types/discord/openapi.ts"],
+    "excludeExternals": true
+}

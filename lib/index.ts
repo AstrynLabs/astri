@@ -1,6 +1,6 @@
-import pkg from '../package.json';
+import { version } from '../package.json';
 
-export const VERSION = pkg.version;
+export const VERSION = version;
 
 export * from './builders';
 export * from './constants';
