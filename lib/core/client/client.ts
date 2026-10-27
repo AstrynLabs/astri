@@ -1,11 +1,13 @@
 import { EventEmitter } from 'eventemitter3';
 import { IDENTIFY_WINDOW } from '../../constants';
-import type { APIUser, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayReadyData } from '../../types';
+import type { GuildApplicationCommandPermissions } from '../../interfaces';
+import type { APIApplicationCommand, APIChannel, APIUser, ApplicationCommandBulkData, ApplicationCommandCreateData, ApplicationCommandEditData, ApplicationCommandFetchOptions, ClientCaches, ClientContext, ClientEvents, ClientOptions, GatewayGuildCreateData, GatewayReadyData, GuildApplicationCommandBulkData, GuildApplicationCommandCreateData, GuildFetchOptions } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
 import { RequestHandler } from '../rest';
-import type { Entitlement, Guild, User } from '../structures';
-import { upsertUser } from '../structures';
+import type { Channel, Entitlement, User } from '../structures';
+import { ApplicationCommand, Guild, upsertChannel, upsertUser } from '../structures';
+import { toCommandPermissions } from '../structures/util';
 import { handleDispatch, Shard } from '../ws';
 
 /**
@@ -21,7 +23,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     readonly unavailableGuilds = new Set<string>();
     readonly shards = new Map<number, Shard>();
     user: User | null = null;
-    /** The bot's application id, known after the first `READY`. Needed to register commands. */
+    /** The bot's application id, known after the first `READY` or the first command call. */
     applicationId: string | null = null;
 
     readonly #options: ClientOptions;
@@ -33,6 +35,7 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     #sharding: Promise<void> | null = null;
     #generation = 0;
     #ready = false;
+    #fetchingApplicationId: Promise<string> | null = null;
 
     constructor(options: ClientOptions) {
         super();
@@ -114,6 +117,97 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         this.cache.destroy();
         this.rest.removeAllListeners();
         this.removeAllListeners();
+    }
+
+    /** Fetches a user, cached or not, and caches it. */
+    async fetchUser(userId: string): Promise<User> {
+        return upsertUser(this, (await this.rest.get('user', userId)) as APIUser);
+    }
+
+    /** Fetches a channel or thread the client can see. Guild channels and threads are cached with their guild. */
+    async fetchChannel(channelId: string): Promise<Channel> {
+        return upsertChannel(this, (await this.rest.get('channel', channelId)) as APIChannel);
+    }
+
+    /**
+     * Fetches a guild the client is in. A cached guild is patched and returned; otherwise the guild is returned
+     * without being cached, since the REST payload has no channels, members or voice states.
+     */
+    async fetchGuild(guildId: string, options?: GuildFetchOptions): Promise<Guild> {
+        const data = (await this.rest.get('guild', guildId, options)) as Partial<GatewayGuildCreateData> & { id: string };
+        const cached = this.guilds.get(guildId);
+        if (cached === undefined) return new Guild(this, data);
+        cached.patch(data);
+        return cached;
+    }
+
+    /** Fetches the global commands, or a guild's commands when `guildId` is given. */
+    async fetchCommands(guildId?: string, options?: ApplicationCommandFetchOptions): Promise<ApplicationCommand[]> {
+        const applicationId = await this.#resolveApplicationId();
+        const commands = guildId === undefined ? await this.rest.get('applicationCommands', applicationId, options) : await this.rest.get('applicationGuildCommands', applicationId, guildId, options);
+        return (commands as APIApplicationCommand[]).map((command) => new ApplicationCommand(this, command));
+    }
+
+    /** Fetches one global command, or a guild command when `guildId` is given. */
+    async fetchCommand(commandId: string, guildId?: string): Promise<ApplicationCommand> {
+        const applicationId = await this.#resolveApplicationId();
+        const command = guildId === undefined ? await this.rest.get('applicationCommand', applicationId, commandId) : await this.rest.get('applicationGuildCommand', applicationId, guildId, commandId);
+        return new ApplicationCommand(this, command as APIApplicationCommand);
+    }
+
+    /** Creates a global command, or a guild command when `guildId` is given. A command with the same name and type is overwritten. */
+    async createCommand(data: ApplicationCommandCreateData | GuildApplicationCommandCreateData, guildId?: string): Promise<ApplicationCommand> {
+        const applicationId = await this.#resolveApplicationId();
+        const command = guildId === undefined ? await this.rest.post('applicationCommand', applicationId, data as ApplicationCommandCreateData) : await this.rest.post('applicationGuildCommand', applicationId, guildId, data as GuildApplicationCommandCreateData);
+        return new ApplicationCommand(this, command as APIApplicationCommand);
+    }
+
+    /** Edits a global command, or a guild command when `guildId` is given. */
+    async editCommand(commandId: string, data: ApplicationCommandEditData, guildId?: string): Promise<ApplicationCommand> {
+        const applicationId = await this.#resolveApplicationId();
+        const command = guildId === undefined ? await this.rest.patch('applicationCommand', applicationId, commandId, data) : await this.rest.patch('applicationGuildCommand', applicationId, guildId, commandId, data);
+        return new ApplicationCommand(this, command as APIApplicationCommand);
+    }
+
+    /** Deletes a global command, or a guild command when `guildId` is given. */
+    async deleteCommand(commandId: string, guildId?: string): Promise<void> {
+        const applicationId = await this.#resolveApplicationId();
+        if (guildId === undefined) await this.rest.delete('applicationCommand', applicationId, commandId);
+        else await this.rest.delete('applicationGuildCommand', applicationId, guildId, commandId);
+    }
+
+    /**
+     * Replaces every global command, or every command in a guild when `guildId` is given, with `commands`. Commands
+     * left out are deleted, and ones whose name and type match an existing command keep its id. An empty list
+     * deletes them all.
+     */
+    async setCommands(commands: ApplicationCommandBulkData | GuildApplicationCommandBulkData, guildId?: string): Promise<ApplicationCommand[]> {
+        const applicationId = await this.#resolveApplicationId();
+        const result = guildId === undefined ? await this.rest.put('applicationCommands', applicationId, commands as ApplicationCommandBulkData) : await this.rest.put('applicationGuildCommands', applicationId, guildId, commands as GuildApplicationCommandBulkData);
+        return ((result ?? []) as APIApplicationCommand[]).map((command) => new ApplicationCommand(this, command));
+    }
+
+    /** Fetches the permission overrides of every command that has some in a guild. */
+    async fetchCommandPermissions(guildId: string): Promise<GuildApplicationCommandPermissions[]> {
+        const applicationId = await this.#resolveApplicationId();
+        const permissions = await this.rest.get('applicationGuildCommandsPermissions', applicationId, guildId);
+        return permissions.map(toCommandPermissions);
+    }
+
+    /** The application id from `READY`, or from `GET /applications/@me` when no shard has been ready yet. */
+    #resolveApplicationId(): Promise<string> {
+        if (this.applicationId !== null) return Promise.resolve(this.applicationId);
+        this.#fetchingApplicationId ??= this.rest.get('currentApplication').then(
+            (application) => {
+                this.applicationId ??= application.id;
+                return this.applicationId;
+            },
+            (error: unknown) => {
+                this.#fetchingApplicationId = null;
+                throw error;
+            }
+        );
+        return this.#fetchingApplicationId;
     }
 
     async #fetchSharding(): Promise<void> {

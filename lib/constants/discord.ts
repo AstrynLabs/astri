@@ -19,6 +19,9 @@ export const ChannelTypes = {
 } as const;
 export type ChannelTypes = (typeof ChannelTypes)[keyof typeof ChannelTypes];
 
+/** Channel types that are threads. */
+export const THREAD_CHANNEL_TYPES: ReadonlySet<number> = new Set([ChannelTypes.AnnouncementThread, ChannelTypes.PublicThread, ChannelTypes.PrivateThread]);
+
 /** Values of an interaction's `type`. */
 export const InteractionTypes = {
     Ping: 1,

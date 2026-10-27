@@ -1,4 +1,4 @@
-import { ChannelTypes } from '../../../constants';
+import { ChannelTypes, THREAD_CHANNEL_TYPES } from '../../../constants';
 import type { APIChannel, ClientContext } from '../../../types';
 import type { Channel } from './channel';
 import { UnknownChannel } from './channel';
@@ -89,4 +89,14 @@ export function upsertGuildChannel(client: ClientContext, data: APIChannel, guil
     const created = createChannel(client, data, guildId);
     channels?.set(created.id, created);
     return created;
+}
+
+/**
+ * Any channel payload as the matching class: guild channels and threads go through {@link upsertGuildChannel} and
+ * {@link upsertThread}, so they are patched into and cached with their guild. DMs are never cached.
+ */
+export function upsertChannel(client: ClientContext, data: APIChannel): Channel {
+    const guildId = data.guild_id ?? null;
+    if (guildId === null) return createChannel(client, data, null);
+    return THREAD_CHANNEL_TYPES.has(data.type) ? upsertThread(client, data, guildId) : upsertGuildChannel(client, data, guildId);
 }

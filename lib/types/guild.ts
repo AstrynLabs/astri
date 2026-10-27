@@ -38,3 +38,6 @@ export type PruneOptions = RESTBody<'/guilds/{guild_id}/prune', 'post'>;
 
 /** Who a prune would kick. See {@link PruneOptions}. */
 export type PruneCountOptions = RESTQuery<'/guilds/{guild_id}/prune', 'get'>;
+
+/** `with_counts` fills in the approximate member and presence counts. */
+export type GuildFetchOptions = RESTQuery<'/guilds/{guild_id}', 'get'>;
