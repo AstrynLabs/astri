@@ -108,3 +108,4 @@ export interface APIChannel {
 /** A page of threads with the client's own membership in each it joined. */
 export type APIThreadList = components['schemas']['ThreadsResponse'];
 export type APIThreadSearchResult = components['schemas']['ThreadSearchResponse'];
+export type APIFollowedChannel = components['schemas']['ChannelFollowerResponse'];

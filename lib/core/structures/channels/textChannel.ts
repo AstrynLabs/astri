@@ -1,5 +1,5 @@
 import type { ChannelTypes } from '../../../constants';
-import type { PinnedMessages, ThreadList, ThreadSearchResult } from '../../../interfaces';
+import type { FollowedChannel, PinnedMessages, ThreadList, ThreadSearchResult } from '../../../interfaces';
 import type { APIChannel, ArchivedThreadFetchOptions, ClientContext, JoinedArchivedThreadFetchOptions, MessageCreateData, MessageFetchOptions, PinFetchOptions, ThreadCreateData, ThreadSearchOptions } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Message } from '../message';
@@ -116,5 +116,11 @@ export class AnnouncementChannel extends BaseGuildTextChannel {
     constructor(client: ClientContext, data: APIChannel, guildId: string) {
         super(client, data, guildId);
         this.patch(data);
+    }
+
+    /** Has this channel's crossposted messages sent to `webhookChannelId` through a new webhook. Needs the manage webhooks permission there. */
+    async follow(webhookChannelId: string, reason?: string): Promise<FollowedChannel> {
+        const followed = await this.client.rest.post('channelFollowers', this.id, { webhook_channel_id: webhookChannelId }, reason);
+        return { channelId: followed.channel_id, webhookId: followed.webhook_id };
     }
 }

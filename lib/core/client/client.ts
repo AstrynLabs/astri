@@ -1,8 +1,10 @@
 import { EventEmitter } from 'eventemitter3';
 import { IDENTIFY_WINDOW, MEMBER_REQUEST_TIMEOUT } from '../../constants';
-import type { ActivityInstance, ApplicationRoleConnectionMetadata, GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest, StickerPack, Subscription, UserGuild, VoiceRegion } from '../../interfaces';
+import type { ActivityInstance, Application, ApplicationRoleConnectionMetadata, GuildApplicationCommandPermissions, GuildMembersChunk, PendingMemberRequest, StickerPack, Subscription, UserGuild, VoiceRegion } from '../../interfaces';
 import type {
+    APIApplication,
     APIApplicationCommand,
+    APIAttachment,
     APIChannel,
     APICurrentUser,
     APIEntitlement,
@@ -18,6 +20,8 @@ import type {
     ApplicationCommandCreateData,
     ApplicationCommandEditData,
     ApplicationCommandFetchOptions,
+    ApplicationEditData,
+    ApplicationEmojiCreateData,
     ClientCaches,
     ClientContext,
     ClientEvents,
@@ -33,15 +37,19 @@ import type {
     InviteFetchOptions,
     PresenceOptions,
     RequestGuildMembersOptions,
+    RESTBody,
+    RESTFile,
+    RoleConnectionMetadataData,
     SubscriptionFetchOptions,
+    TestEntitlementCreateData,
     VoiceStateOptions
 } from '../../types';
 import { CacheManager } from '../cache';
 import type { Cache } from '../cache';
 import { RequestHandler } from '../rest';
 import type { Channel, Entitlement, ExtendedUser, Invite, Member, StageInstance, Sticker, User } from '../structures';
-import { ApplicationCommand, Guild, GuildPreview, GuildTemplate, SoundboardSound, upsertChannel, upsertEntitlement, upsertExtendedUser, upsertInvite, upsertStageInstance, upsertSticker, upsertUser, Webhook } from '../structures';
-import { toActivityInstance, toCommandPermissions, toRoleConnectionMetadata, toStickerPack, toSubscription, toUserGuild, toVoiceRegion } from '../structures/util';
+import { ApplicationCommand, ApplicationEmoji, Attachment, Guild, GuildPreview, GuildTemplate, SoundboardSound, upsertChannel, upsertEntitlement, upsertExtendedUser, upsertInvite, upsertStageInstance, upsertSticker, upsertUser, Webhook } from '../structures';
+import { toActivityInstance, toApplication, toCommandPermissions, toRoleConnectionMetadata, toStickerPack, toSubscription, toUserGuild, toVoiceRegion } from '../structures/util';
 import { handleDispatch, Shard } from '../ws';
 
 /**
@@ -331,6 +339,39 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         return ((await this.rest.get('voiceRegions')) ?? []).map(toVoiceRegion);
     }
 
+    /** Fetches the client's own application. */
+    async fetchApplication(): Promise<Application> {
+        return toApplication(this, (await this.rest.get('currentApplication')) as APIApplication);
+    }
+
+    async editApplication(data: ApplicationEditData): Promise<Application> {
+        return toApplication(this, await this.rest.patch('currentApplication', data));
+    }
+
+    /** Uploads a file for the application's activity to use, such as a screenshot to share. */
+    async uploadApplicationAttachment(file: RESTFile): Promise<Attachment> {
+        const { attachment } = await this.rest.post('applicationAttachment', await this.#resolveApplicationId(), {} as RESTBody<'/applications/{application_id}/attachment', 'post'>, { files: [file], form: true });
+        return new Attachment(this, attachment as APIAttachment);
+    }
+
+    /** Fetches every emoji the application owns. */
+    async fetchApplicationEmojis(): Promise<ApplicationEmoji[]> {
+        const applicationId = await this.#resolveApplicationId();
+        const { items } = await this.rest.get('applicationEmojis', applicationId);
+        return items.map((emoji) => new ApplicationEmoji(this, emoji, applicationId));
+    }
+
+    async fetchApplicationEmoji(emojiId: string): Promise<ApplicationEmoji> {
+        const applicationId = await this.#resolveApplicationId();
+        return new ApplicationEmoji(this, await this.rest.get('applicationEmoji', applicationId, emojiId), applicationId);
+    }
+
+    /** Uploads an emoji the bot can use in any guild. Applications can own up to 2000. */
+    async createApplicationEmoji(data: ApplicationEmojiCreateData): Promise<ApplicationEmoji> {
+        const applicationId = await this.#resolveApplicationId();
+        return new ApplicationEmoji(this, await this.rest.post('applicationEmoji', applicationId, data), applicationId);
+    }
+
     /** Fetches the application's entitlements, newest first unless paged with `after`, and caches them. */
     async fetchEntitlements(options?: EntitlementFetchOptions): Promise<Entitlement[]> {
         const entitlements = await this.rest.get('applicationEntitlements', await this.#resolveApplicationId(), options);
@@ -340,6 +381,11 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     /** Fetches one of the application's entitlements and caches it. */
     async fetchEntitlement(entitlementId: string): Promise<Entitlement> {
         return upsertEntitlement(this, (await this.rest.get('applicationEntitlement', await this.#resolveApplicationId(), entitlementId)) as APIEntitlement);
+    }
+
+    /** Gives a user or guild free access to a SKU, for testing. Delete it with {@link Entitlement.delete}. */
+    async createTestEntitlement(data: TestEntitlementCreateData): Promise<Entitlement> {
+        return upsertEntitlement(this, (await this.rest.post('applicationEntitlement', await this.#resolveApplicationId(), data)) as APIEntitlement);
     }
 
     /** Fetches subscriptions to one of the application's subscription SKUs. */
@@ -354,6 +400,11 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
     /** The application's linked role metadata fields. */
     async fetchRoleConnectionMetadata(): Promise<ApplicationRoleConnectionMetadata[]> {
         return ((await this.rest.get('applicationRoleConnectionsMetadata', await this.#resolveApplicationId())) ?? []).map(toRoleConnectionMetadata);
+    }
+
+    /** Replaces the application's linked role metadata fields. */
+    async setRoleConnectionMetadata(data: RoleConnectionMetadataData): Promise<ApplicationRoleConnectionMetadata[]> {
+        return ((await this.rest.put('applicationRoleConnectionsMetadata', await this.#resolveApplicationId(), data)) ?? []).map(toRoleConnectionMetadata);
     }
 
     /** Fetches a running instance of the application's activity. */

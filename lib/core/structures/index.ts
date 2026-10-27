@@ -1,4 +1,5 @@
 export * from './applicationCommand';
+export * from './applicationEmoji';
 export * from './attachment';
 export * from './autoModerationRule';
 export * from './base';

@@ -1,5 +1,5 @@
 import { MAX_RETRY_DELAY, RETRY_BASE_DELAY } from '../../constants';
-import type { APIErrorDetails, APIErrorResponse } from '../../types';
+import type { APIErrorDetails, APIErrorResponse, RESTFile } from '../../types';
 
 export function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -15,6 +15,10 @@ export function buildQuery(query: Record<string, unknown> | undefined): string {
     }
     const string = search.toString();
     return string === '' ? '' : `?${string}`;
+}
+
+export function toBlob(file: RESTFile): Blob {
+    return file.data instanceof Blob ? file.data : new Blob([file.data as BlobPart], file.contentType === undefined ? undefined : { type: file.contentType });
 }
 
 export function retryDelay(failures: number): number {

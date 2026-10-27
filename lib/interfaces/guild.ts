@@ -1,5 +1,5 @@
 import type { GuildOnboardingModes, OnboardingPromptTypes } from '../constants';
-import type { Member, Permission, Presence, User } from '../core/structures';
+import type { Member, Message, Permission, Presence, ThreadChannel, User } from '../core/structures';
 import type { ReactionEmoji } from './message';
 
 export interface GuildBan {
@@ -146,4 +146,23 @@ export interface OnboardingPromptOption {
     roleIds: string[];
     /** Channels members who pick the option get opted into. */
     channelIds: string[];
+}
+
+/** Raid protections in effect. */
+export interface GuildIncidentActions {
+    /** Unix ms new invites are paused until, or `null`. */
+    invitesDisabledUntil: number | null;
+    /** Unix ms DMs between members who are not friends are paused until, or `null`. */
+    dmsDisabledUntil: number | null;
+}
+
+/** A page of messages matching a guild search. */
+export interface GuildMessageSearchResult {
+    messages: Message[];
+    /** Messages matching the search across every page. */
+    totalResults: number;
+    /** Threads the matching messages are in. */
+    threads: ThreadChannel[];
+    /** Whether Discord is still indexing older messages, so results may be missing some. */
+    indexing: boolean;
 }

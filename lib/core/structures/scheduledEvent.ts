@@ -1,11 +1,11 @@
 import { GuildScheduledEventStatuses, type GuildScheduledEventPrivacyLevels } from '../../constants';
-import type { GuildScheduledEventUser, GuildScheduledEventUserCounts, RecurrenceRule } from '../../interfaces';
-import type { APIGuildScheduledEvent, ClientContext, GuildScheduledEventEditData, GuildScheduledEventUserFetchOptions } from '../../types';
+import type { GuildScheduledEventException, GuildScheduledEventUser, GuildScheduledEventUserCounts, RecurrenceRule } from '../../interfaces';
+import type { APIGuildScheduledEvent, ClientContext, GuildScheduledEventEditData, GuildScheduledEventExceptionCreateData, GuildScheduledEventExceptionEditData, GuildScheduledEventUserFetchOptions } from '../../types';
 import { Base } from './base';
 import type { Channel } from './channels';
 import type { Guild } from './guild';
 import { upsertUser, type User } from './user';
-import { parseTimestamp, toRecurrenceRule, toScheduledEventUser, toScheduledEventUserCounts } from './util';
+import { parseTimestamp, toRecurrenceRule, toScheduledEventException, toScheduledEventUser, toScheduledEventUserCounts } from './util';
 
 /** An event scheduled in a guild, held in a stage or voice channel, or somewhere else. */
 export class GuildScheduledEvent extends Base {
@@ -95,6 +95,21 @@ export class GuildScheduledEvent extends Base {
     /** Cancels an event that has not started. */
     cancel(reason?: string): Promise<this> {
         return this.edit({ status: GuildScheduledEventStatuses.Canceled }, reason);
+    }
+
+    /** Recurring events only: moves or cancels one occurrence. Needs the same permissions as {@link GuildScheduledEvent.edit}. */
+    async createException(data: GuildScheduledEventExceptionCreateData, reason?: string): Promise<GuildScheduledEventException> {
+        return toScheduledEventException(await this.client.rest.post('guildScheduledEventException', this.guildId, this.id, data, reason));
+    }
+
+    /** Recurring events only. Needs the same permissions as {@link GuildScheduledEvent.edit}. */
+    async editException(exceptionId: string, data: GuildScheduledEventExceptionEditData, reason?: string): Promise<GuildScheduledEventException> {
+        return toScheduledEventException(await this.client.rest.patch('guildScheduledEventException', this.guildId, this.id, exceptionId, data, reason));
+    }
+
+    /** Recurring events only: puts the occurrence back on its original schedule. Needs the same permissions as {@link GuildScheduledEvent.edit}. */
+    async deleteException(exceptionId: string, reason?: string): Promise<void> {
+        await this.client.rest.delete('guildScheduledEventException', this.guildId, this.id, exceptionId, reason);
     }
 
     /** Fetches subscribers, in user id order, and caches their users and members. */

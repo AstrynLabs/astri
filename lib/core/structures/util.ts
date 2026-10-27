@@ -1,6 +1,8 @@
 import type {
     Activity,
     ActivityInstance,
+    Application,
+    ApplicationInstallParams,
     ApplicationCommandOption,
     ApplicationRoleConnectionMetadata,
     AuditLogChange,
@@ -12,7 +14,10 @@ import type {
     GuildApplicationCommandPermissions,
     GuildAuditLog,
     GuildBan,
+    GuildIncidentActions,
+    GuildMessageSearchResult,
     GuildOnboarding,
+    GuildScheduledEventException,
     GuildScheduledEventUser,
     GuildScheduledEventUserCounts,
     GuildVanityURL,
@@ -37,6 +42,8 @@ import type {
 import type {
     APIActivity,
     APIActivityInstance,
+    APIApplication,
+    APIApplicationInstallParams,
     APIApplicationRoleConnectionMetadata,
     APIApplicationCommandOption,
     APIAutoModerationAction,
@@ -50,9 +57,12 @@ import type {
     APIChannel,
     APIGuildAuditLog,
     APIGuildBan,
+    APIGuildIncidentsData,
     APIGuildMember,
     APIGuildOnboarding,
+    APIGuildScheduledEventException,
     APIGuildScheduledEventUser,
+    APIGuildSearchResult,
     APIGuildScheduledEventUserCounts,
     APIGuildVanityURL,
     APIGuildWelcomeScreen,
@@ -63,6 +73,7 @@ import type {
     APIUser,
     APIWebhook,
     APIIntegrationApplication,
+    APIMessage,
     APIInviteGuild,
     APIMessageReaction,
     APIPoll,
@@ -594,6 +605,62 @@ export function toScheduledEventUser(client: ClientContext, data: APIGuildSchedu
         user,
         member: data.member === undefined || user === null ? null : upsertMember(client, { ...(data.member as unknown as APIGuildMember), user: data.user as APIUser }, guildId),
         response: data.response
+    };
+}
+
+export function toScheduledEventException(data: APIGuildScheduledEventException): GuildScheduledEventException {
+    return {
+        eventId: data.event_id,
+        id: data.event_exception_id,
+        startsAt: parseTimestamp(data.scheduled_start_time),
+        endsAt: parseTimestamp(data.scheduled_end_time),
+        canceled: data.is_canceled
+    };
+}
+
+export function toIncidentActions(data: APIGuildIncidentsData): GuildIncidentActions {
+    return { invitesDisabledUntil: parseTimestamp(data.invites_disabled_until), dmsDisabledUntil: parseTimestamp(data.dms_disabled_until) };
+}
+
+export function toMessageSearchResult(client: ClientContext, data: APIGuildSearchResult, guildId: string): GuildMessageSearchResult {
+    return {
+        messages: data.messages.flat().map((message) => upsertMessage(client, message as unknown as APIMessage, guildId)),
+        totalResults: data.total_results,
+        threads: toThreadList(client, { threads: data.threads ?? [], members: data.members ?? [], has_more: false }, guildId).threads,
+        indexing: data.doing_deep_historical_index
+    };
+}
+
+function toInstallParams(data: APIApplicationInstallParams | undefined): ApplicationInstallParams | null {
+    return data === undefined ? null : { scopes: data.scopes, permissions: new Permission(data.permissions) };
+}
+
+export function toApplication(client: ClientContext, data: APIApplication): Application {
+    return {
+        id: data.id,
+        name: data.name,
+        icon: data.icon,
+        description: data.description,
+        coverImage: data.cover_image ?? null,
+        flags: data.flags,
+        owner: upsertUser(client, data.owner as APIUser),
+        team: data.team === null ? null : { id: data.team.id, name: data.team.name, icon: data.team.icon, ownerUserId: data.team.owner_user_id },
+        botPublic: data.bot_public ?? false,
+        botRequireCodeGrant: data.bot_require_code_grant ?? false,
+        verifyKey: data.verify_key,
+        guildId: data.guild_id ?? null,
+        primarySkuId: data.primary_sku_id ?? null,
+        termsOfServiceURL: data.terms_of_service_url ?? null,
+        privacyPolicyURL: data.privacy_policy_url ?? null,
+        customInstallURL: data.custom_install_url ?? null,
+        tags: data.tags ?? [],
+        installParams: toInstallParams(data.install_params),
+        integrationTypesConfig: Object.fromEntries(Object.entries(data.integration_types_config ?? {}).map(([type, config]) => [type, toInstallParams(config.oauth2_install_params)])),
+        redirectURIs: data.redirect_uris,
+        interactionsEndpointURL: data.interactions_endpoint_url,
+        roleConnectionsVerificationURL: data.role_connections_verification_url,
+        approximateGuildCount: data.approximate_guild_count,
+        approximateUserInstallCount: data.approximate_user_install_count
     };
 }
 

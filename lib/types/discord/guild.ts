@@ -54,3 +54,5 @@ export type APIGuildWelcomeScreen = components['schemas']['GuildWelcomeScreenRes
 export type APIGuildWidgetSettings = components['schemas']['WidgetSettingsResponse'];
 export type APIGuildWidget = components['schemas']['WidgetResponse'];
 export type APIGuildOnboarding = components['schemas']['UserGuildOnboardingResponse'];
+export type APIGuildIncidentsData = components['schemas']['GuildIncidentsDataResponse'];
+export type APIGuildSearchResult = components['schemas']['GuildSearchResponse'];

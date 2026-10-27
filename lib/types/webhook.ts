@@ -24,3 +24,6 @@ export interface WebhookMessageEditData extends WebhookUpdateRequest {
 
 /** A new incoming webhook. `avatar` is a data URI. */
 export type WebhookCreateData = RESTBody<'/channels/{channel_id}/webhooks', 'post'>;
+
+/** Changes to a webhook made with its token. Only `name` and `avatar` can change. */
+export type WebhookTokenEditData = RESTBody<'/webhooks/{webhook_id}/{webhook_token}', 'patch'>;

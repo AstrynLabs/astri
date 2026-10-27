@@ -1,8 +1,9 @@
 import type { ChannelTypes } from '../../../constants';
 import type { PinnedMessages } from '../../../interfaces';
-import type { APIChannel, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions } from '../../../types';
+import type { APIChannel, APIStageInstance, ClientContext, MessageCreateData, MessageFetchOptions, PinFetchOptions, StageInstanceCreateData } from '../../../types';
 import type { Cache } from '../../cache';
 import type { Message } from '../message';
+import { upsertStageInstance, type StageInstance } from '../stageInstance';
 import { bulkDeleteMessages, fetchMessage, fetchMessages, fetchPins, parseTimestamp, sendMessage } from '../util';
 import { GuildChannel } from './guildChannel';
 
@@ -83,6 +84,20 @@ export class VoiceChannel extends BaseGuildVoiceChannel {
         super(client, data, guildId);
         this.patch(data);
     }
+
+    /** Sets the topic shown while people are connected, or clears it with `null`. Needs the set voice channel status permission, and to be connected unless the client can manage channels. */
+    async setStatus(status: string | null, reason?: string): Promise<void> {
+        await this.client.rest.put('channelVoiceStatus', this.id, { status }, reason);
+    }
+
+    /**
+     * Plays a soundboard sound for everyone connected. The client must be connected, not muted or deafened, and have
+     * the speak and use soundboard permissions. Sounds from another guild, given as `sourceGuildId`, also need the use
+     * external sounds permission.
+     */
+    async sendSoundboardSound(soundId: string, sourceGuildId?: string): Promise<void> {
+        await this.client.rest.post('channelSendSoundboardSound', this.id, { sound_id: soundId, source_guild_id: sourceGuildId });
+    }
 }
 
 export class StageChannel extends BaseGuildVoiceChannel {
@@ -91,5 +106,11 @@ export class StageChannel extends BaseGuildVoiceChannel {
     constructor(client: ClientContext, data: APIChannel, guildId: string) {
         super(client, data, guildId);
         this.patch(data);
+    }
+
+    /** Starts a stage and caches it. Needs to be a stage moderator: the manage channels, mute members and move members permissions. */
+    async createStageInstance(data: StageInstanceCreateData, reason?: string): Promise<StageInstance> {
+        const stageInstance = await this.client.rest.post('stageInstance', { ...data, channel_id: this.id }, reason);
+        return upsertStageInstance(this.client, stageInstance as APIStageInstance);
     }
 }

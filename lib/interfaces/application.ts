@@ -1,4 +1,5 @@
 import type { ApplicationRoleConnectionMetadataTypes } from '../constants';
+import type { Permission, User } from '../core/structures';
 
 /** One field of the application's linked role metadata, which guilds can require for a role. */
 export interface ApplicationRoleConnectionMetadata {
@@ -30,4 +31,60 @@ export interface ActivityLocation {
     channelId: string;
     /** `null` outside guilds. */
     guildId: string | null;
+}
+
+/** The client's own application, as its owner sees it. */
+export interface Application {
+    id: string;
+    name: string;
+    /** Icon hash. */
+    icon: string | null;
+    description: string;
+    /** Rich presence invite cover image hash. */
+    coverImage: string | null;
+    /** Application flag bits, combined. */
+    flags: number;
+    owner: User;
+    /** Set when a team owns the application. */
+    team: ApplicationTeam | null;
+    /** Whether anyone can add the bot, not just the owner. */
+    botPublic: boolean;
+    /** Whether adding the bot needs the full OAuth2 code grant. */
+    botRequireCodeGrant: boolean;
+    /** Hex key for checking interaction request signatures. */
+    verifyKey: string;
+    /** The guild the application is linked to, for games sold on Discord. */
+    guildId: string | null;
+    /** The SKU of the game, for games sold on Discord. */
+    primarySkuId: string | null;
+    termsOfServiceURL: string | null;
+    privacyPolicyURL: string | null;
+    customInstallURL: string | null;
+    /** Up to 5 tags describing the application. */
+    tags: string[];
+    installParams: ApplicationInstallParams | null;
+    /** Default install settings per installation context: `0` guild, `1` user. */
+    integrationTypesConfig: Record<string, ApplicationInstallParams | null>;
+    redirectURIs: string[];
+    /** Where interactions are sent instead of the gateway, or `null`. */
+    interactionsEndpointURL: string | null;
+    /** Linked roles verification URL, or `null`. */
+    roleConnectionsVerificationURL: string | null;
+    approximateGuildCount: number;
+    approximateUserInstallCount: number;
+}
+
+/** A team owning an application. */
+export interface ApplicationTeam {
+    id: string;
+    name: string;
+    /** Icon hash. */
+    icon: string | null;
+    ownerUserId: string;
+}
+
+/** The OAuth2 scopes and bot permissions the in-app install link asks for. */
+export interface ApplicationInstallParams {
+    scopes: string[];
+    permissions: Permission;
 }

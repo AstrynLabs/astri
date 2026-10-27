@@ -1,6 +1,6 @@
 import type { WebhookTypes } from '../../constants';
 import type { WebhookSourceChannel, WebhookSourceGuild } from '../../interfaces';
-import type { APIWebhook, ClientContext, WebhookEditData, WebhookMessageCreateData, WebhookMessageEditData } from '../../types';
+import type { APIWebhook, ClientContext, WebhookEditData, WebhookMessageCreateData, WebhookMessageEditData, WebhookTokenEditData } from '../../types';
 import { Base } from './base';
 import type { Channel } from './channels';
 import type { Guild } from './guild';
@@ -74,6 +74,17 @@ export class Webhook extends Base {
     /** Needs the manage webhooks permission. */
     async delete(reason?: string): Promise<void> {
         await this.client.rest.delete('webhook', this.id, reason);
+    }
+
+    /** Edits the webhook with its token, so no permission is needed. Only the name and avatar can change. */
+    async editWithToken(data: WebhookTokenEditData, reason?: string): Promise<this> {
+        this.patch((await this.client.rest.patch('webhookToken', this.id, this.#token(), data, reason)) as APIWebhook);
+        return this;
+    }
+
+    /** Deletes the webhook with its token, so no permission is needed. */
+    async deleteWithToken(reason?: string): Promise<void> {
+        await this.client.rest.delete('webhookToken', this.id, this.#token(), reason);
     }
 
     /** Sends a message through the webhook and waits for it to be created. Needs the token. */

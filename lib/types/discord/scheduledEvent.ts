@@ -34,3 +34,4 @@ export interface APIGuildScheduledEvent {
 
 export type APIGuildScheduledEventUser = components['schemas']['ScheduledEventUserResponse'];
 export type APIGuildScheduledEventUserCounts = components['schemas']['ScheduledEventUserCountResponse'];
+export type APIGuildScheduledEventException = components['schemas']['GuildScheduledEventExceptionResponse'];

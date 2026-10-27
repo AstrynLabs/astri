@@ -25,3 +25,9 @@ export interface ThreadSearchResult extends ThreadList {
     /** Threads matching the search across every page. */
     totalResults: number;
 }
+
+/** An announcement channel follow: the webhook that crossposts into the following channel. */
+export interface FollowedChannel {
+    channelId: string;
+    webhookId: string;
+}

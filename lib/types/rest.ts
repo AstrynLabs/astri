@@ -46,6 +46,8 @@ export interface RESTRequestBaseOptions {
     reason?: string;
     /** Whether to send the bot token. Default: `false` on webhook and interaction token routes, `true` otherwise. */
     auth?: boolean;
+    /** Sends the body as plain form fields and each file as `file`, for upload routes that take no `payload_json`. */
+    form?: boolean;
     signal?: AbortSignal;
 }
 

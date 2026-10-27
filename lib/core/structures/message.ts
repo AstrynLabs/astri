@@ -168,6 +168,12 @@ export class Message extends Base {
         await this.client.rest.delete('channelMessagesPin', this.channelId, this.id, reason);
     }
 
+    /** Ends the message's poll now, ahead of its expiry. Only works on polls the client sent. */
+    async expirePoll(): Promise<this> {
+        this.patch(await this.client.rest.post('channelPollExpire', this.channelId, this.id));
+        return this;
+    }
+
     /** Announcement channels only: sends the message to every channel following this one. */
     async crosspost(): Promise<this> {
         this.patch(await this.client.rest.post('channelMessageCrosspost', this.channelId, this.id));

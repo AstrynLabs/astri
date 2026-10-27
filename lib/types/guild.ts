@@ -44,3 +44,27 @@ export type GuildFetchOptions = RESTQuery<'/guilds/{guild_id}', 'get'>;
 
 /** Which audit log entries to fetch: filtered by `user_id` or `action_type`, paged with `before` or `after`. `limit` is 1-100, 50 by default. */
 export type AuditLogFetchOptions = RESTQuery<'/guilds/{guild_id}/audit-logs', 'get'>;
+
+/** New positions, and optionally parents, for some of a guild's channels. Channels left out keep theirs. */
+export type ChannelPositionsData = RESTBody<'/guilds/{guild_id}/channels', 'patch'>;
+
+/** New positions for some of a guild's roles. Roles left out keep theirs. */
+export type RolePositionsData = RESTBody<'/guilds/{guild_id}/roles', 'patch'>;
+
+/** Adds a user to the guild with an OAuth2 `access_token` that has the `guilds.join` scope. */
+export type MemberAddData = RESTBody<'/guilds/{guild_id}/members/{user_id}', 'put'>;
+
+/** Changes to the welcome screen. Fields left out are kept. */
+export type WelcomeScreenEditData = RESTBody<'/guilds/{guild_id}/welcome-screen', 'patch'>;
+
+/** Changes to the widget settings. Fields left out are kept. */
+export type WidgetSettingsEditData = RESTBody<'/guilds/{guild_id}/widget', 'patch'>;
+
+/** The full onboarding setup. Prompts left out are deleted. */
+export type OnboardingEditData = RESTBody<'/guilds/{guild_id}/onboarding', 'put'>;
+
+/** When invites and DMs are paused until, as ISO 8601 timestamps at most 24 hours ahead. `null` lifts a pause. */
+export type IncidentActionsEditData = RESTBody<'/guilds/{guild_id}/incident-actions', 'put'>;
+
+/** What to search for: content, authors, mentions, attachments and more, sorted and paged with `limit` (1-25) and `offset`. */
+export type MessageSearchOptions = Omit<NonNullable<RESTQuery<'/guilds/{guild_id}/messages/search', 'get'>>, 'guild_id'>;

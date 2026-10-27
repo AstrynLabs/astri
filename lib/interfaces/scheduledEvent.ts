@@ -48,3 +48,14 @@ export interface GuildScheduledEventUserCounts {
     /** Users subscribed to each requested occurrence, by exception id. */
     exceptions: Record<string, number>;
 }
+
+/** A change to one occurrence of a recurring event: moved, or canceled. */
+export interface GuildScheduledEventException {
+    eventId: string;
+    id: string;
+    /** Unix ms the occurrence now starts, or `null` if it keeps its original time. */
+    startsAt: number | null;
+    /** Unix ms the occurrence now ends, or `null` if it keeps its original time. */
+    endsAt: number | null;
+    canceled: boolean;
+}

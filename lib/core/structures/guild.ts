@@ -1,5 +1,52 @@
-import type { BulkBanResult, GuildAuditLog, GuildBan, GuildOnboarding, GuildVanityURL, GuildWidget, GuildWidgetSettings, VoiceRegion, WelcomeScreen } from '../../interfaces';
-import type { APIAutoModerationRule, APIChannel, APIGuildAuditLog, APIGuildBan, APIGuildEmoji, APIGuildPreview, APIGuildScheduledEvent, APIGuildTemplate, APIIntegration, APISoundboardSound, APISticker, APIVoiceState, AuditLogFetchOptions, APIGuildMember, APIInvite, APIRole, APIWebhook, BanFetchOptions, BanOptions, BulkBanData, ClientContext, EmojiCreateData, GatewayGuildCreateData, GuildChannelCreateData, GuildEditData, GuildScheduledEventFetchOptions, MemberFetchOptions, PruneCountOptions, PruneOptions, RoleCreateData, SoundboardSoundCreateData, TemplateCreateData } from '../../types';
+import type { BulkBanResult, GuildAuditLog, GuildBan, GuildIncidentActions, GuildMessageSearchResult, GuildOnboarding, GuildVanityURL, GuildWidget, GuildWidgetSettings, VoiceRegion, WelcomeScreen } from '../../interfaces';
+import type {
+    APIAutoModerationRule,
+    APIChannel,
+    APIGuildAuditLog,
+    APIGuildBan,
+    APIGuildEmoji,
+    APIGuildOnboarding,
+    APIGuildPreview,
+    APIGuildScheduledEvent,
+    APIGuildTemplate,
+    APIIntegration,
+    APISoundboardSound,
+    APISticker,
+    APIVoiceState,
+    AuditLogFetchOptions,
+    APIGuildMember,
+    APIInvite,
+    APIRole,
+    APIWebhook,
+    AutoModerationRuleCreateData,
+    BanFetchOptions,
+    BanOptions,
+    BulkBanData,
+    ChannelPositionsData,
+    ClientContext,
+    EmojiCreateData,
+    GatewayGuildCreateData,
+    GuildChannelCreateData,
+    GuildEditData,
+    GuildScheduledEventCreateData,
+    GuildScheduledEventFetchOptions,
+    IncidentActionsEditData,
+    MemberAddData,
+    MemberFetchOptions,
+    MessageSearchOptions,
+    OnboardingEditData,
+    PruneCountOptions,
+    PruneOptions,
+    RESTBody,
+    RESTQuery,
+    RoleCreateData,
+    RolePositionsData,
+    SoundboardSoundCreateData,
+    StickerCreateData,
+    TemplateCreateData,
+    WelcomeScreenEditData,
+    WidgetSettingsEditData
+} from '../../types';
 import type { Cache } from '../cache';
 import { upsertAutoModerationRule, type AutoModerationRule } from './autoModerationRule';
 import { Base } from './base';
@@ -16,7 +63,7 @@ import { GuildScheduledEvent, upsertScheduledEvent } from './scheduledEvent';
 import { SoundboardSound, upsertSoundboardSound } from './soundboardSound';
 import { StageInstance } from './stageInstance';
 import { Sticker, upsertSticker } from './sticker';
-import { toGuildAuditLog, toGuildBan, toOnboarding, toThreadList, toVanityURL, toVoiceRegion, toWelcomeScreen, toWidget, toWidgetSettings } from './util';
+import { toGuildAuditLog, toGuildBan, toIncidentActions, toMessageSearchResult, toOnboarding, toThreadList, toVanityURL, toVoiceRegion, toWelcomeScreen, toWidget, toWidgetSettings } from './util';
 import { upsertVoiceState, VoiceState } from './voiceState';
 import { Webhook } from './webhook';
 
@@ -197,14 +244,34 @@ export class Guild extends Base {
         return upsertGuildChannel(this.client, (await this.client.rest.post('guildChannels', this.id, data, reason)) as APIChannel, this.id);
     }
 
+    /** Moves channels, and optionally into another category. Needs the manage channels permission. */
+    async setChannelPositions(data: ChannelPositionsData, reason?: string): Promise<void> {
+        await this.client.rest.patch('guildChannels', this.id, data, reason);
+    }
+
     /** Needs the manage roles permission. */
     async createRole(data: RoleCreateData = {}, reason?: string): Promise<Role> {
         return upsertRole(this.client, (await this.client.rest.post('guildRole', this.id, data, reason)) as APIRole, this.id);
     }
 
+    /** Moves roles, and resolves to every role, cached. Needs the manage roles permission; only roles below the client's highest can move. */
+    async setRolePositions(data: RolePositionsData, reason?: string): Promise<Role[]> {
+        const roles = await this.client.rest.patch('guildRoles', this.id, data, reason);
+        return (roles as APIRole[]).map((role) => upsertRole(this.client, role, this.id));
+    }
+
     /** Needs the create expressions permission. */
     async createEmoji(data: EmojiCreateData, reason?: string): Promise<Emoji> {
         return upsertEmoji(this.client, (await this.client.rest.post('guildEmoji', this.id, data, reason)) as APIGuildEmoji, this.id);
+    }
+
+    /**
+     * Adds a user who authorized the application with the `guilds.join` scope. Needs the create instant invite
+     * permission, plus the permission for each extra field set. Resolves to `null` when the user was already a member.
+     */
+    async addMember(userId: string, data: MemberAddData, reason?: string): Promise<Member | null> {
+        const member = await this.client.rest.put('guildMember', this.id, userId, data, reason);
+        return member === undefined ? null : upsertMember(this.client, member as APIGuildMember, this.id);
     }
 
     /** Fetches one member and caches it. */
@@ -358,6 +425,13 @@ export class Guild extends Base {
         return upsertEmoji(this.client, (await this.client.rest.get('guildEmoji', this.id, emojiId)) as APIGuildEmoji, this.id);
     }
 
+    /** Uploads a sticker and caches it. Needs the create expressions permission. */
+    async createSticker(data: StickerCreateData, reason?: string): Promise<Sticker> {
+        const { file, ...body } = data;
+        const sticker = (await this.client.rest.post('guildSticker', this.id, body as RESTBody<'/guilds/{guild_id}/stickers', 'post'>, { files: [file], form: true, reason })) as APISticker;
+        return upsertSticker(this.client, { ...sticker, guild_id: this.id });
+    }
+
     /** Fetches every sticker and caches them. Uploaders are only included with the manage expressions permission. */
     async fetchStickers(): Promise<Sticker[]> {
         const stickers = await this.client.rest.get('guildStickers', this.id);
@@ -370,6 +444,11 @@ export class Guild extends Base {
         return upsertSticker(this.client, { ...sticker, guild_id: this.id });
     }
 
+    /** Creates an auto moderation rule and caches it. Needs the manage guild permission. */
+    async createAutoModerationRule(data: AutoModerationRuleCreateData, reason?: string): Promise<AutoModerationRule> {
+        return upsertAutoModerationRule(this.client, (await this.client.rest.post('guildAutoModerationRule', this.id, data, reason)) as unknown as APIAutoModerationRule);
+    }
+
     /** Fetches every auto moderation rule and caches them. Needs the manage guild permission. */
     async fetchAutoModerationRules(): Promise<AutoModerationRule[]> {
         const rules = await this.client.rest.get('guildAutoModerationRules', this.id);
@@ -379,6 +458,11 @@ export class Guild extends Base {
     /** Fetches one auto moderation rule and caches it. Needs the manage guild permission. */
     async fetchAutoModerationRule(ruleId: string): Promise<AutoModerationRule> {
         return upsertAutoModerationRule(this.client, (await this.client.rest.get('guildAutoModerationRule', this.id, ruleId)) as unknown as APIAutoModerationRule);
+    }
+
+    /** Creates a scheduled event and caches it. Needs the create events permission. */
+    async createScheduledEvent(data: GuildScheduledEventCreateData, reason?: string): Promise<GuildScheduledEvent> {
+        return upsertScheduledEvent(this.client, (await this.client.rest.post('guildScheduledEvent', this.id, data, reason)) as unknown as APIGuildScheduledEvent);
     }
 
     /** Fetches every scheduled event and caches them. */
@@ -414,8 +498,18 @@ export class Guild extends Base {
     }
 
     /** Needs the manage guild permission. */
+    async editWelcomeScreen(data: WelcomeScreenEditData, reason?: string): Promise<WelcomeScreen> {
+        return toWelcomeScreen(await this.client.rest.patch('guildWelcomeScreen', this.id, data, reason));
+    }
+
+    /** Needs the manage guild permission. */
     async fetchWidgetSettings(): Promise<GuildWidgetSettings> {
         return toWidgetSettings(await this.client.rest.get('guildWidget', this.id));
+    }
+
+    /** Needs the manage guild permission. */
+    async editWidgetSettings(data: WidgetSettingsEditData, reason?: string): Promise<GuildWidgetSettings> {
+        return toWidgetSettings(await this.client.rest.patch('guildWidget', this.id, data, reason));
     }
 
     /** Fetches the public widget. Fails when the widget is disabled. */
@@ -425,6 +519,28 @@ export class Guild extends Base {
 
     async fetchOnboarding(): Promise<GuildOnboarding> {
         return toOnboarding(await this.client.rest.get('guildOnboarding', this.id));
+    }
+
+    /** Replaces the onboarding setup. Needs the manage guild and manage roles permissions. */
+    async editOnboarding(data: OnboardingEditData, reason?: string): Promise<GuildOnboarding> {
+        return toOnboarding((await this.client.rest.put('guildOnboarding', this.id, data, reason)) as unknown as APIGuildOnboarding);
+    }
+
+    /** Pauses or resumes invites and DMs, as raid protection. Needs the manage guild permission. */
+    async setIncidentActions(data: IncidentActionsEditData, reason?: string): Promise<GuildIncidentActions> {
+        return toIncidentActions(await this.client.rest.put('guildIncidentActions', this.id, data, reason));
+    }
+
+    /**
+     * Searches the guild's messages, and caches the matching messages and their threads. Needs the read message
+     * history permission; channels the client cannot read are left out.
+     *
+     * @throws When Discord is still indexing the guild; the error says how many seconds to wait before retrying.
+     */
+    async searchMessages(options: MessageSearchOptions = {}): Promise<GuildMessageSearchResult> {
+        const result = await this.client.rest.get('guildMessagesSearch', this.id, options as RESTQuery<'/guilds/{guild_id}/messages/search', 'get'>);
+        if ('retry_after' in result) throw new Error(`Messages of guild ${this.id} are still being indexed, retry in ${result.retry_after}s`);
+        return toMessageSearchResult(this.client, result, this.id);
     }
 }
 

@@ -4,7 +4,7 @@ import { API_VERSION, BUCKET_SWEEP_INTERVAL, DEFAULT_API_URL, DEFAULT_GLOBAL_RAT
 import type { RESTArgs, RESTEvents, RESTMethod, RESTNamedRoute, RESTOptions, RESTRawRequestOptions, RESTRequestArgs, RESTResponse, RESTRoute, RESTRouteEntry, RESTRouteMethod, RESTRouteName, RESTRouteNameFor } from '../../types';
 import { Bucket } from './bucket';
 import { DiscordHTTPError, DiscordRESTError } from './errors';
-import { buildQuery, parseError, readJSON, retryDelay, sleep } from './util';
+import { buildQuery, parseError, readJSON, retryDelay, sleep, toBlob } from './util';
 
 /**
  * Sends requests to Discord's REST API, typed from Discord's OpenAPI spec.
@@ -125,13 +125,14 @@ export class RequestHandler extends EventEmitter<RESTEvents> {
         if (auth) headers.Authorization = `Bot ${this.#token}`;
         if (options.reason !== undefined) headers['X-Audit-Log-Reason'] = encodeURIComponent(options.reason);
         let body: string | FormData | undefined;
-        if (options.files !== undefined && options.files.length > 0) {
+        if (options.form === true) {
+            body = new FormData();
+            for (const [key, value] of Object.entries((options.body ?? {}) as Record<string, unknown>)) if (value !== undefined && value !== null) body.append(key, String(value));
+            for (const file of options.files ?? []) body.append('file', toBlob(file), file.name);
+        } else if (options.files !== undefined && options.files.length > 0) {
             body = new FormData();
             if (options.body !== undefined) body.append('payload_json', JSON.stringify(options.body));
-            options.files.forEach((file, index) => {
-                const blob = file.data instanceof Blob ? file.data : new Blob([file.data as BlobPart], file.contentType === undefined ? undefined : { type: file.contentType });
-                (body as FormData).append(`files[${index}]`, blob, file.name);
-            });
+            options.files.forEach((file, index) => (body as FormData).append(`files[${index}]`, toBlob(file), file.name));
         } else if (options.body !== undefined) {
             body = JSON.stringify(options.body);
             headers['Content-Type'] = 'application/json';
