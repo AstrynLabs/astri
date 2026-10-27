@@ -1,6 +1,7 @@
 import { InteractionCallbackTypes, MessageFlags, type InteractionContextTypes, type InteractionTypes } from '../../../constants';
-import type { APIEntitlement, APIInteraction, APIMessage, ClientContext, InteractionDeferOptions, InteractionEditData, InteractionMessageData, RESTBody, RESTFile } from '../../../types';
+import type { APIInteraction, APIMessage, ClientContext, InteractionDeferOptions, InteractionEditData, InteractionMessageData, RESTBody, RESTFile } from '../../../types';
 import { Base } from '../base';
+import { upsertEntitlement, type Entitlement } from '../entitlement';
 import type { Channel } from '../channels';
 import type { Guild } from '../guild';
 import { upsertMember, type Member } from '../member';
@@ -43,7 +44,8 @@ export abstract class Interaction extends Base {
     readonly context: InteractionContextTypes | null;
     /** Installation contexts the interaction is authorized for (`0` guild, `1` user), mapped to the guild or user id that installed the app. */
     readonly authorizingIntegrationOwners: Partial<Record<'0' | '1', string>>;
-    readonly entitlements: APIEntitlement[];
+    /** What the user or guild has bought from the application. Also cached on the client. */
+    readonly entitlements: Entitlement[];
     /** Bytes. */
     readonly attachmentSizeLimit: number;
     /** Whether the initial response has been sent. */
@@ -66,7 +68,7 @@ export abstract class Interaction extends Base {
         this.guildLocale = data.guild_locale ?? null;
         this.context = data.context ?? null;
         this.authorizingIntegrationOwners = data.authorizing_integration_owners;
-        this.entitlements = data.entitlements;
+        this.entitlements = data.entitlements.map((entitlement) => upsertEntitlement(client, entitlement));
         this.attachmentSizeLimit = data.attachment_size_limit;
     }
 

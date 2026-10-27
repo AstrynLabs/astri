@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionTypes } from '../../../constants';
-import type { Attachment } from '../../../interfaces';
 import type { APIApplicationCommandInteractionDataOption } from '../../../types';
+import type { Attachment } from '../attachment';
 import type { Channel } from '../channels';
 import type { Member } from '../member';
 import type { Role } from '../role';

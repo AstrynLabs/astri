@@ -1,12 +1,21 @@
-import type { ChannelTypes, ReactionTypes } from '../../constants';
+import type { AutoModerationTriggerTypes, ChannelTypes, ReactionTypes } from '../../constants';
+import type { APIGuildApplicationCommandPermissions } from './applicationCommand';
+import type { APIAutoModerationAction, APIAutoModerationRule } from './autoModeration';
 import type { APIChannel, APIThreadMember } from './channel';
 import type { APIGuildEmoji } from './emoji';
+import type { APIEntitlement } from './entitlement';
 import type { APIGuild } from './guild';
 import type { APIInteraction } from './interaction';
+import type { APIInvite } from './invite';
 import type { APIGuildMember } from './member';
 import type { APIMessage, APIReactionEmoji, GatewayMessageMember } from './message';
+import type { APIPresence } from './presence';
 import type { APIRole } from './role';
+import type { APIGuildScheduledEvent } from './scheduledEvent';
+import type { APIStageInstance } from './stageInstance';
+import type { APISticker } from './sticker';
 import type { APIUser } from './user';
+import type { APIVoiceState } from './voice';
 
 /** `GUILD_CREATE` body: the full guild plus fields only sent when the client first receives it. */
 export interface GatewayGuildCreateData extends APIGuild {
@@ -19,6 +28,12 @@ export interface GatewayGuildCreateData extends APIGuild {
     channels: APIChannel[];
     /** Every active thread the client can see. */
     threads: APIChannel[];
+    /** Everyone connected to a voice or stage channel. */
+    voice_states: APIVoiceState[];
+    /** Not every member: needs the guild presences intent, and large guilds leave out offline members. */
+    presences: APIPresence[];
+    stage_instances: APIStageInstance[];
+    guild_scheduled_events: APIGuildScheduledEvent[];
 }
 
 /** `GUILD_DELETE` body. `unavailable` is set when the guild dropped out in an outage, and absent when the client left or was removed. */
@@ -192,6 +207,60 @@ export interface GatewayMessagePollVoteData {
     answer_id: number;
 }
 
+export interface GatewayGuildStickersUpdateData {
+    guild_id: string;
+    stickers: APISticker[];
+}
+
+export interface GatewayGuildScheduledEventUserData {
+    guild_scheduled_event_id: string;
+    user_id: string;
+    guild_id: string;
+}
+
+/** `INVITE_CREATE` body: an invite with every usage field, and the channel as an id only. */
+export interface GatewayInviteCreateData extends APIInvite {
+    channel_id: string;
+    uses: number;
+    max_uses: number;
+    max_age: number;
+    temporary: boolean;
+    created_at: string;
+}
+
+export interface GatewayInviteDeleteData {
+    channel_id: string;
+    guild_id?: string;
+    code: string;
+}
+
+export interface GatewayWebhooksUpdateData {
+    guild_id: string;
+    channel_id: string;
+}
+
+export interface GatewayPresenceUpdateDispatchData extends APIPresence {
+    guild_id: string;
+}
+
+export interface GatewayAutoModerationActionExecutionData {
+    guild_id: string;
+    action: APIAutoModerationAction;
+    rule_id: string;
+    rule_trigger_type: AutoModerationTriggerTypes;
+    user_id: string;
+    channel_id?: string;
+    /** Left out when the message was blocked, or the content was not a message. */
+    message_id?: string;
+    /** The alert sent by an alert action, if one was sent. */
+    alert_system_message_id?: string;
+    /** Empty without the message content intent. */
+    content: string;
+    matched_keyword: string | null;
+    /** Empty without the message content intent. */
+    matched_content: string | null;
+}
+
 /** Body of every dispatch the library handles, keyed by the payload's `t`. */
 export interface GatewayDispatchData {
     GUILD_CREATE: GatewayGuildCreateData;
@@ -206,6 +275,12 @@ export interface GatewayDispatchData {
     GUILD_BAN_ADD: GatewayGuildBanData;
     GUILD_BAN_REMOVE: GatewayGuildBanData;
     GUILD_EMOJIS_UPDATE: GatewayGuildEmojisUpdateData;
+    GUILD_STICKERS_UPDATE: GatewayGuildStickersUpdateData;
+    GUILD_SCHEDULED_EVENT_CREATE: APIGuildScheduledEvent;
+    GUILD_SCHEDULED_EVENT_UPDATE: APIGuildScheduledEvent;
+    GUILD_SCHEDULED_EVENT_DELETE: APIGuildScheduledEvent;
+    GUILD_SCHEDULED_EVENT_USER_ADD: GatewayGuildScheduledEventUserData;
+    GUILD_SCHEDULED_EVENT_USER_REMOVE: GatewayGuildScheduledEventUserData;
     CHANNEL_CREATE: APIChannel;
     CHANNEL_UPDATE: APIChannel;
     CHANNEL_DELETE: APIChannel;
@@ -228,4 +303,20 @@ export interface GatewayDispatchData {
     MESSAGE_POLL_VOTE_REMOVE: GatewayMessagePollVoteData;
     TYPING_START: GatewayTypingStartData;
     INTERACTION_CREATE: APIInteraction;
+    INVITE_CREATE: GatewayInviteCreateData;
+    INVITE_DELETE: GatewayInviteDeleteData;
+    WEBHOOKS_UPDATE: GatewayWebhooksUpdateData;
+    VOICE_STATE_UPDATE: APIVoiceState;
+    PRESENCE_UPDATE: GatewayPresenceUpdateDispatchData;
+    AUTO_MODERATION_RULE_CREATE: APIAutoModerationRule;
+    AUTO_MODERATION_RULE_UPDATE: APIAutoModerationRule;
+    AUTO_MODERATION_RULE_DELETE: APIAutoModerationRule;
+    AUTO_MODERATION_ACTION_EXECUTION: GatewayAutoModerationActionExecutionData;
+    STAGE_INSTANCE_CREATE: APIStageInstance;
+    STAGE_INSTANCE_UPDATE: APIStageInstance;
+    STAGE_INSTANCE_DELETE: APIStageInstance;
+    ENTITLEMENT_CREATE: APIEntitlement;
+    ENTITLEMENT_UPDATE: APIEntitlement;
+    ENTITLEMENT_DELETE: APIEntitlement;
+    APPLICATION_COMMAND_PERMISSIONS_UPDATE: APIGuildApplicationCommandPermissions;
 }

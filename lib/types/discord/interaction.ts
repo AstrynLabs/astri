@@ -1,12 +1,10 @@
 import type { ApplicationCommandOptionTypes, ApplicationCommandTypes, ComponentTypes, InteractionContextTypes, InteractionTypes } from '../../constants';
 import type { APIChannel } from './channel';
+import type { APIEntitlement } from './entitlement';
 import type { APIGuildMember } from './member';
 import type { APIAttachment, APIMessage } from './message';
-import type { components } from './openapi';
 import type { APIRole } from './role';
 import type { APIUser } from './user';
-
-export type APIEntitlement = components['schemas']['EntitlementResponse'];
 
 /** The member who triggered an interaction, with their permissions in the channel it came from. */
 export interface APIInteractionGuildMember extends APIGuildMember {

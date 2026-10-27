@@ -1,66 +1,66 @@
 {
-  "name": "astri-ts",
-  "version": "1.0.0",
-  "description": "A Efficient and Fast Discord API Wrapper for Node.js",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "name": "astri-ts",
+    "version": "1.0.0",
+    "description": "A Efficient and Fast Discord API Wrapper for Node.js",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "build": "tsup lib --format esm --dts --clean --no-splitting",
+        "format": "prettier . --write",
+        "prepublishOnly": "npm run build",
+        "generate:openapi": "pnpm dlx --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json -o lib/types/discord/openapi.ts && node scripts/generate-routes.mjs && prettier lib/types/discord/openapi.ts lib/constants/routes.ts --write"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/FireGamer3/astri-ts.git"
+    },
+    "keywords": [
+        "api",
+        "discord",
+        "discordapp",
+        "astri-ts",
+        "wrapper"
+    ],
+    "license": "NOLICENSE",
+    "dependencies": {
+        "eventemitter3": "^5.0.4",
+        "ws": "^8.22.0"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3.3.7",
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^26.6.5",
+        "@types/ws": "^8.18.2",
+        "@typescript/typescript6": "^6.0.2",
+        "eslint": "^10.13.0",
+        "globals": "^17.13.0",
+        "prettier": "^3.9.10",
+        "tsconfig-paths": "^4.2.0",
+        "tsup": "^9.0.0",
+        "typescript": "^7.0.2",
+        "typescript-eslint": "^8.72.0"
+    },
+    "peerDependencies": {
+        "zlib-sync": "0.1.9"
+    },
+    "browser": {
+        "@discordjs/opus": false,
+        "child_process": false,
+        "dgram": false,
+        "dns": false,
+        "fs": false,
+        "tls": false,
+        "tweetnacl": false,
+        "ws": false
     }
-  },
-  "engines": {
-    "node": ">=10.4.0"
-  },
-  "scripts": {
-    "build": "tsup lib --format esm --dts --clean --no-splitting",
-    "format": "prettier . --write",
-    "prepublishOnly": "npm run build",
-    "generate:openapi": "pnpm dlx --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json -o lib/types/discord/openapi.ts && node scripts/generate-routes.mjs && prettier lib/types/discord/openapi.ts lib/constants/routes.ts --write"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/FireGamer3/astri-ts.git"
-  },
-  "keywords": [
-    "api",
-    "discord",
-    "discordapp",
-    "astri-ts",
-    "wrapper"
-  ],
-  "license": "NOLICENSE",
-  "dependencies": {
-    "eventemitter3": "^5.0.4",
-    "ws": "^8.22.0"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.3.7",
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^26.6.5",
-    "@types/ws": "^8.18.2",
-    "@typescript/typescript6": "^6.0.2",
-    "eslint": "^10.13.0",
-    "globals": "^17.13.0",
-    "prettier": "^3.9.10",
-    "tsconfig-paths": "^4.2.0",
-    "tsup": "^9.0.0",
-    "typescript": "^7.0.2",
-    "typescript-eslint": "^8.72.0"
-  },
-  "peerDependencies": {
-    "zlib-sync": "0.1.9"
-  },
-  "browser": {
-    "@discordjs/opus": false,
-    "child_process": false,
-    "dgram": false,
-    "dns": false,
-    "fs": false,
-    "tls": false,
-    "tweetnacl": false,
-    "ws": false
-  }
 }

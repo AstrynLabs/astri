@@ -1,27 +1,9 @@
-import type { Attachment, MessageReaction, Poll, ReactionEmoji } from '../../interfaces';
-import type { APIAttachment, APIMessageReaction, APIPoll, APIReactionEmoji, ClientContext, EmojiResolvable, RESTFile, TextBasedChannel } from '../../types';
+import type { Activity, ApplicationCommandOption, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, InviteGuild, MessageReaction, Poll, ReactionEmoji, RecurrenceRule } from '../../interfaces';
+import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, RESTFile, TextBasedChannel } from '../../types';
 import type { Message } from './message';
 
 export function parseTimestamp(value: string | null): number | null {
     return value === null ? null : Date.parse(value);
-}
-
-export function toAttachment(data: APIAttachment): Attachment {
-    return {
-        id: data.id,
-        filename: data.filename,
-        size: data.size,
-        url: data.url,
-        proxyURL: data.proxy_url,
-        contentType: data.content_type ?? null,
-        description: data.description ?? null,
-        width: data.width ?? null,
-        height: data.height ?? null,
-        durationSecs: data.duration_secs ?? null,
-        waveform: data.waveform ?? null,
-        ephemeral: data.ephemeral ?? false,
-        flags: data.flags ?? 0
-    };
 }
 
 export function splitFiles<T extends { files?: RESTFile[] }>(data: string | T): [body: Omit<T, 'files'>, files: RESTFile[] | undefined] {
@@ -125,4 +107,149 @@ export function applyPollVote(message: Message, answerId: number, delta: 1 | -1,
     if (answer === undefined) return;
     answer.voteCount = Math.max(0, answer.voteCount + delta);
     if (self) answer.meVoted = delta === 1;
+}
+
+export function toEmbedMedia(data: NonNullable<APIEmbed['image'] | APIEmbed['video'] | APIEmbed['audio']>): EmbedMedia {
+    return {
+        url: data.url ?? null,
+        proxyURL: data.proxy_url ?? null,
+        width: 'width' in data ? (data.width ?? null) : null,
+        height: 'height' in data ? (data.height ?? null) : null,
+        contentType: data.content_type ?? null,
+        description: data.description ?? null,
+        flags: 'flags' in data ? (data.flags ?? 0) : 0
+    };
+}
+
+export function toActivity(data: APIActivity): Activity {
+    return {
+        name: data.name,
+        type: data.type,
+        url: data.url ?? null,
+        createdAt: data.created_at,
+        startedAt: data.timestamps?.start ?? null,
+        endsAt: data.timestamps?.end ?? null,
+        applicationId: data.application_id ?? null,
+        statusDisplayType: data.status_display_type ?? null,
+        details: data.details ?? null,
+        detailsURL: data.details_url ?? null,
+        state: data.state ?? null,
+        stateURL: data.state_url ?? null,
+        emoji: data.emoji == null ? null : { name: data.emoji.name, id: data.emoji.id ?? null, animated: data.emoji.animated ?? false },
+        partyId: data.party?.id ?? null,
+        partySize: data.party?.size ?? null,
+        assets:
+            data.assets === undefined
+                ? null
+                : {
+                      largeImage: data.assets.large_image ?? null,
+                      largeText: data.assets.large_text ?? null,
+                      largeURL: data.assets.large_url ?? null,
+                      smallImage: data.assets.small_image ?? null,
+                      smallText: data.assets.small_text ?? null,
+                      smallURL: data.assets.small_url ?? null
+                  },
+        instance: data.instance ?? false,
+        flags: data.flags ?? 0,
+        buttons: data.buttons ?? []
+    };
+}
+
+export function toClientStatus(data: APIClientStatus): ClientStatus {
+    return { desktop: data.desktop ?? null, mobile: data.mobile ?? null, web: data.web ?? null };
+}
+
+export function toRecurrenceRule(data: APIRecurrenceRule): RecurrenceRule {
+    return {
+        start: Date.parse(data.start),
+        end: parseTimestamp(data.end ?? null),
+        frequency: data.frequency,
+        interval: data.interval,
+        byWeekday: data.by_weekday,
+        byNWeekday: data.by_n_weekday,
+        byMonth: data.by_month,
+        byMonthDay: data.by_month_day,
+        byYearDay: data.by_year_day ?? null,
+        count: data.count ?? null
+    };
+}
+
+export function toTriggerMetadata(data: APIAutoModerationTriggerMetadata): AutoModerationTriggerMetadata {
+    return {
+        keywordFilter: data.keyword_filter ?? [],
+        regexPatterns: data.regex_patterns ?? [],
+        presets: data.presets ?? [],
+        allowList: data.allow_list ?? [],
+        mentionTotalLimit: data.mention_total_limit ?? null,
+        mentionRaidProtectionEnabled: data.mention_raid_protection_enabled ?? false
+    };
+}
+
+export function toAutoModerationAction(data: APIAutoModerationAction): AutoModerationAction {
+    return {
+        type: data.type,
+        channelId: data.metadata?.channel_id ?? null,
+        durationSeconds: data.metadata?.duration_seconds ?? null,
+        customMessage: data.metadata?.custom_message ?? null
+    };
+}
+
+export function toActionExecution(data: GatewayAutoModerationActionExecutionData): AutoModerationActionExecution {
+    return {
+        guildId: data.guild_id,
+        action: toAutoModerationAction(data.action),
+        ruleId: data.rule_id,
+        ruleTriggerType: data.rule_trigger_type,
+        userId: data.user_id,
+        channelId: data.channel_id ?? null,
+        messageId: data.message_id ?? null,
+        alertSystemMessageId: data.alert_system_message_id ?? null,
+        content: data.content,
+        matchedKeyword: data.matched_keyword,
+        matchedContent: data.matched_content
+    };
+}
+
+export function toCommandOption(data: APIApplicationCommandOption): ApplicationCommandOption {
+    return {
+        type: data.type,
+        name: data.name,
+        nameLocalizations: data.name_localizations ?? null,
+        description: data.description,
+        descriptionLocalizations: data.description_localizations ?? null,
+        required: data.required ?? false,
+        choices: data.choices?.map((choice) => ({ name: choice.name, nameLocalizations: choice.name_localizations ?? null, value: choice.value })) ?? [],
+        options: data.options?.map(toCommandOption) ?? [],
+        channelTypes: data.channel_types ?? [],
+        minValue: data.min_value ?? null,
+        maxValue: data.max_value ?? null,
+        minLength: data.min_length ?? null,
+        maxLength: data.max_length ?? null,
+        autocomplete: data.autocomplete ?? false
+    };
+}
+
+export function toCommandPermissions(data: APIGuildApplicationCommandPermissions): GuildApplicationCommandPermissions {
+    return {
+        id: data.id,
+        applicationId: data.application_id,
+        guildId: data.guild_id,
+        permissions: data.permissions.map((permission) => ({ id: permission.id, type: permission.type, permission: permission.permission }))
+    };
+}
+
+export function toInviteGuild(data: APIInviteGuild): InviteGuild {
+    return {
+        id: data.id,
+        name: data.name,
+        icon: data.icon,
+        splash: data.splash,
+        banner: data.banner,
+        description: data.description,
+        features: data.features,
+        verificationLevel: data.verification_level,
+        vanityURLCode: data.vanity_url_code,
+        nsfwLevel: data.nsfw_level,
+        premiumSubscriptionCount: data.premium_subscription_count
+    };
 }

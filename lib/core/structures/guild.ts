@@ -1,10 +1,17 @@
 import type { ClientContext, GatewayGuildCreateData } from '../../types';
 import type { Cache } from '../cache';
+import type { AutoModerationRule } from './autoModerationRule';
 import { Base } from './base';
 import { createChannel, createThreadChannel, type Channel, type ThreadChannel } from './channels';
 import { Emoji } from './emoji';
+import type { Invite } from './invite';
 import { Member } from './member';
+import { Presence } from './presence';
 import { Role } from './role';
+import { GuildScheduledEvent } from './scheduledEvent';
+import { StageInstance } from './stageInstance';
+import { Sticker } from './sticker';
+import { VoiceState } from './voiceState';
 
 export class Guild extends Base {
     name: string;
@@ -46,6 +53,18 @@ export class Guild extends Base {
     readonly threads: Cache<string, ThreadChannel>;
     /** Cached members. Usually a subset: large guilds only send online members up front. */
     readonly members: Cache<string, Member>;
+    readonly stickers: Cache<string, Sticker>;
+    /** Keyed by code. Filled by invite events and fetches, since guilds arrive without their invites. */
+    readonly invites: Cache<string, Invite>;
+    /** Everyone connected to a voice or stage channel, keyed by user id. */
+    readonly voiceStates: Cache<string, VoiceState>;
+    /** Keyed by user id. Needs the guild presences intent; large guilds only send online members up front. */
+    readonly presences: Cache<string, Presence>;
+    readonly scheduledEvents: Cache<string, GuildScheduledEvent>;
+    /** Filled by rule events and fetches, since guilds arrive without their rules. */
+    readonly autoModerationRules: Cache<string, AutoModerationRule>;
+    /** Live stages, keyed by stage instance id. */
+    readonly stageInstances: Cache<string, StageInstance>;
 
     constructor(client: ClientContext, data: Partial<GatewayGuildCreateData> & { id: string }) {
         super(client, data.id);
@@ -54,15 +73,23 @@ export class Guild extends Base {
         this.channels = client.cache.create('channels');
         this.threads = client.cache.create('threads');
         this.members = client.cache.create('members');
+        this.stickers = client.cache.create('stickers');
+        this.invites = client.cache.create('invites');
+        this.voiceStates = client.cache.create('voiceStates');
+        this.presences = client.cache.create('presences');
+        this.scheduledEvents = client.cache.create('scheduledEvents');
+        this.autoModerationRules = client.cache.create('autoModerationRules');
+        this.stageInstances = client.cache.create('stageInstances');
         this.patch(data);
     }
 
     /**
      * Applies a payload. Fields missing from `data` keep their current value.
      *
-     * `roles`, `emojis`, `channels` and `threads` are taken as the complete list: entries not in it are dropped. A
-     * channel or thread whose type changed is replaced with a new instance of the matching class. `members` is only
-     * ever a partial list, so it adds and updates without dropping anyone.
+     * `roles`, `emojis`, `stickers`, `channels`, `threads`, `voice_states`, `stage_instances` and
+     * `guild_scheduled_events` are taken as the complete list: entries not in it are dropped. A channel or thread
+     * whose type changed is replaced with a new instance of the matching class. `members` and `presences` are only
+     * ever partial lists, so they add and update without dropping anyone.
      */
     patch(data: Partial<GatewayGuildCreateData>): void {
         if (data.name !== undefined) this.name = data.name;
@@ -109,6 +136,26 @@ export class Guild extends Base {
                 (thread) => createThreadChannel(this.client, thread, this.id),
                 (cached, thread) => cached.type === thread.type
             );
+        if (data.stickers !== undefined) replaceAll(this.stickers, data.stickers, (sticker) => new Sticker(this.client, { ...sticker, guild_id: this.id }));
+        if (data.stage_instances !== undefined) replaceAll(this.stageInstances, data.stage_instances, (stageInstance) => new StageInstance(this.client, stageInstance));
+        if (data.guild_scheduled_events !== undefined) replaceAll(this.scheduledEvents, data.guild_scheduled_events, (event) => new GuildScheduledEvent(this.client, event));
+        if (data.voice_states !== undefined) {
+            const ids = new Set<string>();
+            for (const voiceState of data.voice_states) {
+                ids.add(voiceState.user_id);
+                const cached = this.voiceStates.peek(voiceState.user_id);
+                if (cached !== undefined) cached.patch(voiceState);
+                else this.voiceStates.set(voiceState.user_id, new VoiceState(this.client, voiceState, this.id));
+            }
+            this.voiceStates.sweep((_value, id) => !ids.has(id));
+        }
+        if (data.presences !== undefined) {
+            for (const presence of data.presences) {
+                const cached = this.presences.peek(presence.user.id);
+                if (cached !== undefined) cached.patch(presence);
+                else if (presence.status !== 'offline') this.presences.set(presence.user.id, new Presence(this.client, presence, this.id));
+            }
+        }
         if (data.members !== undefined) {
             for (const member of data.members) {
                 const cached = this.members.peek(member.user.id);

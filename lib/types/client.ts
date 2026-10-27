@@ -1,7 +1,7 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
-import type { AnyInteraction, Channel, Emoji, Guild, Member, Message, Role, ThreadChannel, ThreadMember, User } from '../core/structures';
-import type { MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
+import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, Guild, GuildScheduledEvent, Invite, Member, Message, Presence, Role, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
+import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
 import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
@@ -32,6 +32,18 @@ export interface ClientCaches {
     threadMembers: ThreadMember;
     /** One cache per text-based channel. Unbounded by default like every kind, so consider a `maxSize`. */
     messages: Message;
+    stickers: Sticker;
+    /** Keyed by code. Filled by invite events and fetches, since guilds arrive without their invites. */
+    invites: Invite;
+    voiceStates: VoiceState;
+    /** Needs the guild presences intent. Offline members are dropped. */
+    presences: Presence;
+    scheduledEvents: GuildScheduledEvent;
+    /** Filled by rule events and fetches, since guilds arrive without their rules. */
+    autoModerationRules: AutoModerationRule;
+    stageInstances: StageInstance;
+    /** The application's entitlements, filled by entitlement events, interactions and fetches. */
+    entitlements: Entitlement;
 }
 
 export interface ClientEvents {
@@ -117,6 +129,47 @@ export interface ClientEvents {
     typingStart: [userId: string, channelId: string, guildId: string | null, startedAt: number, member: Member | null, channel: TextBasedChannel | null];
     /** A command, component, autocomplete or modal submission needs a response within 3 seconds. Narrow with `instanceof`. */
     interactionCreate: [interaction: AnyInteraction];
+    /** `stickers` is the guild's full sticker list after the update. `old` is `null` if the guild was not cached. */
+    guildStickersUpdate: [guildId: string, stickers: Sticker[], old: Sticker[] | null];
+    guildScheduledEventCreate: [event: GuildScheduledEvent];
+    /** `old` is a shallow copy from before the update, or `null` if the event was not cached. */
+    guildScheduledEventUpdate: [event: GuildScheduledEvent, old: GuildScheduledEvent | null];
+    /** `event` is the cached instance if there was one, otherwise built from the payload. */
+    guildScheduledEventDelete: [event: GuildScheduledEvent];
+    /** A user subscribed to a scheduled event. */
+    guildScheduledEventUserAdd: [eventId: string, userId: string, guildId: string, event: GuildScheduledEvent | null];
+    /** A user unsubscribed from a scheduled event. */
+    guildScheduledEventUserRemove: [eventId: string, userId: string, guildId: string, event: GuildScheduledEvent | null];
+    /** Needs the manage channels permission in the invite's channel. */
+    inviteCreate: [invite: Invite];
+    /** `invite` is the cached instance, or `null` if it was not cached. */
+    inviteDelete: [code: string, channelId: string, guildId: string | null, invite: Invite | null];
+    /** A webhook in the channel was created, edited or deleted. Fetch the channel's webhooks to see which. */
+    webhooksUpdate: [channelId: string, guildId: string, channel: Channel | null];
+    /** A user joined, left, moved between or changed their state in a voice channel. `state.channelId` is `null` once they left. */
+    voiceStateUpdate: [state: VoiceState, old: VoiceState | null];
+    /** Needs the guild presences intent. `old` is a shallow copy from before the update, or `null` if the presence was not cached. */
+    presenceUpdate: [presence: Presence, old: Presence | null];
+    autoModerationRuleCreate: [rule: AutoModerationRule];
+    /** `old` is a shallow copy from before the update, or `null` if the rule was not cached. */
+    autoModerationRuleUpdate: [rule: AutoModerationRule, old: AutoModerationRule | null];
+    /** `rule` is the cached instance if there was one, otherwise built from the payload. */
+    autoModerationRuleDelete: [rule: AutoModerationRule];
+    /** Needs the auto moderation execution intent. */
+    autoModerationActionExecution: [execution: AutoModerationActionExecution];
+    stageInstanceCreate: [stageInstance: StageInstance];
+    /** `old` is a shallow copy from before the update, or `null` if the stage instance was not cached. */
+    stageInstanceUpdate: [stageInstance: StageInstance, old: StageInstance | null];
+    /** `stageInstance` is the cached instance if there was one, otherwise built from the payload. */
+    stageInstanceDelete: [stageInstance: StageInstance];
+    /** A user or guild bought or was given one of the application's SKUs. */
+    entitlementCreate: [entitlement: Entitlement];
+    /** A subscription renewed or ended. `old` is a shallow copy from before the update, or `null` if the entitlement was not cached. */
+    entitlementUpdate: [entitlement: Entitlement, old: Entitlement | null];
+    /** An entitlement was refunded, removed by Discord, or a test entitlement was deleted. */
+    entitlementDelete: [entitlement: Entitlement];
+    /** A guild changed who can use one of the application's commands, or all of them. */
+    applicationCommandPermissionsUpdate: [permissions: GuildApplicationCommandPermissions];
 }
 
 /** What structures and dispatch handlers need from the client. */
@@ -124,6 +177,7 @@ export interface ClientContext {
     readonly cache: CacheManager<ClientCaches>;
     readonly guilds: Cache<string, Guild>;
     readonly users: Cache<string, User>;
+    readonly entitlements: Cache<string, Entitlement>;
     readonly rest: RequestHandler;
     readonly user: User | null;
     readonly applicationId: string | null;

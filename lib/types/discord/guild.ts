@@ -1,5 +1,6 @@
 import type { APIGuildEmoji } from './emoji';
 import type { APIRole } from './role';
+import type { APISticker } from './sticker';
 
 export interface APIGuild {
     id: string;
@@ -23,6 +24,7 @@ export interface APIGuild {
     features: string[];
     roles: APIRole[];
     emojis: APIGuildEmoji[];
+    stickers?: APISticker[];
     system_channel_id: string | null;
     system_channel_flags: number;
     rules_channel_id: string | null;

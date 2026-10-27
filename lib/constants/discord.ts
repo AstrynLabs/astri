@@ -174,3 +174,144 @@ export const ReactionTypes = {
     Burst: 1
 } as const;
 export type ReactionTypes = (typeof ReactionTypes)[keyof typeof ReactionTypes];
+
+/** Values of a sticker's `type`. */
+export const StickerTypes = {
+    /** Part of an official sticker pack. */
+    Standard: 1,
+    Guild: 2
+} as const;
+export type StickerTypes = (typeof StickerTypes)[keyof typeof StickerTypes];
+
+/** Values of a sticker's `format_type`. */
+export const StickerFormatTypes = {
+    PNG: 1,
+    APNG: 2,
+    Lottie: 3,
+    GIF: 4
+} as const;
+export type StickerFormatTypes = (typeof StickerFormatTypes)[keyof typeof StickerFormatTypes];
+
+/** Values of an invite's `type`. */
+export const InviteTypes = {
+    Guild: 0,
+    GroupDM: 1,
+    Friend: 2
+} as const;
+export type InviteTypes = (typeof InviteTypes)[keyof typeof InviteTypes];
+
+/** What a voice channel invite opens. */
+export const InviteTargetTypes = {
+    Stream: 1,
+    EmbeddedApplication: 2,
+    RoleSubscriptionsPurchase: 3
+} as const;
+export type InviteTargetTypes = (typeof InviteTargetTypes)[keyof typeof InviteTargetTypes];
+
+/** Values of a webhook's `type`. */
+export const WebhookTypes = {
+    /** Posts messages with its token. */
+    Incoming: 1,
+    /** Crossposts an announcement channel's messages into another channel. */
+    ChannelFollower: 2,
+    /** Used with interactions. */
+    Application: 3
+} as const;
+export type WebhookTypes = (typeof WebhookTypes)[keyof typeof WebhookTypes];
+
+/** Values of an activity's `type`. */
+export const ActivityTypes = {
+    Playing: 0,
+    Streaming: 1,
+    Listening: 2,
+    Watching: 3,
+    Custom: 4,
+    Competing: 5
+} as const;
+export type ActivityTypes = (typeof ActivityTypes)[keyof typeof ActivityTypes];
+
+/** Values of a scheduled event's `status`. */
+export const GuildScheduledEventStatuses = {
+    Scheduled: 1,
+    Active: 2,
+    Completed: 3,
+    Canceled: 4
+} as const;
+export type GuildScheduledEventStatuses = (typeof GuildScheduledEventStatuses)[keyof typeof GuildScheduledEventStatuses];
+
+/** Where a scheduled event takes place. */
+export const GuildScheduledEventEntityTypes = {
+    StageInstance: 1,
+    Voice: 2,
+    External: 3
+} as const;
+export type GuildScheduledEventEntityTypes = (typeof GuildScheduledEventEntityTypes)[keyof typeof GuildScheduledEventEntityTypes];
+
+/** Values of a scheduled event's `privacy_level`. */
+export const GuildScheduledEventPrivacyLevels = {
+    GuildOnly: 2
+} as const;
+export type GuildScheduledEventPrivacyLevels = (typeof GuildScheduledEventPrivacyLevels)[keyof typeof GuildScheduledEventPrivacyLevels];
+
+/** What an auto moderation rule looks for. */
+export const AutoModerationTriggerTypes = {
+    Keyword: 1,
+    Spam: 3,
+    KeywordPreset: 4,
+    MentionSpam: 5,
+    MemberProfile: 6
+} as const;
+export type AutoModerationTriggerTypes = (typeof AutoModerationTriggerTypes)[keyof typeof AutoModerationTriggerTypes];
+
+/** When an auto moderation rule is checked. */
+export const AutoModerationEventTypes = {
+    MessageSend: 1,
+    MemberUpdate: 2
+} as const;
+export type AutoModerationEventTypes = (typeof AutoModerationEventTypes)[keyof typeof AutoModerationEventTypes];
+
+/** What an auto moderation rule does when it triggers. */
+export const AutoModerationActionTypes = {
+    BlockMessage: 1,
+    SendAlertMessage: 2,
+    Timeout: 3,
+    BlockMemberInteraction: 4
+} as const;
+export type AutoModerationActionTypes = (typeof AutoModerationActionTypes)[keyof typeof AutoModerationActionTypes];
+
+/** Word lists Discord maintains for keyword preset rules. */
+export const AutoModerationKeywordPresetTypes = {
+    Profanity: 1,
+    SexualContent: 2,
+    Slurs: 3
+} as const;
+export type AutoModerationKeywordPresetTypes = (typeof AutoModerationKeywordPresetTypes)[keyof typeof AutoModerationKeywordPresetTypes];
+
+/** Values of a stage instance's `privacy_level`. */
+export const StageInstancePrivacyLevels = {
+    /** Deprecated by Discord. */
+    Public: 1,
+    GuildOnly: 2
+} as const;
+export type StageInstancePrivacyLevels = (typeof StageInstancePrivacyLevels)[keyof typeof StageInstancePrivacyLevels];
+
+/** Values of an entitlement's `type`. */
+export const EntitlementTypes = {
+    Purchase: 1,
+    PremiumSubscription: 2,
+    DeveloperGift: 3,
+    TestModePurchase: 4,
+    FreePurchase: 5,
+    UserGift: 6,
+    PremiumPurchase: 7,
+    ApplicationSubscription: 8
+} as const;
+export type EntitlementTypes = (typeof EntitlementTypes)[keyof typeof EntitlementTypes];
+
+/** What an application command permission applies to. */
+export const ApplicationCommandPermissionTypes = {
+    Role: 1,
+    User: 2,
+    Channel: 3
+} as const;
+export type ApplicationCommandPermissionTypes = (typeof ApplicationCommandPermissionTypes)[keyof typeof ApplicationCommandPermissionTypes];

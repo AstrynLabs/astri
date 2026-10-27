@@ -1,13 +1,15 @@
 import { MessageFlags } from '../../constants';
-import type { Attachment, MessageReaction, Poll } from '../../interfaces';
-import type { APIChannel, APIEmbed, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, TextBasedChannel } from '../../types';
+import type { MessageReaction, Poll } from '../../interfaces';
+import type { APIChannel, APIMessageComponent, APIMessageInteractionMetadata, APIMessageReference, APIMessageSnapshot, APIStickerItem, ClientContext, EmojiResolvable, GatewayMessageCreateData, MessageCreateData, MessageData, MessageEditData, TextBasedChannel } from '../../types';
 import { Collection } from '../cache';
+import { Attachment } from './attachment';
 import { Base } from './base';
 import { upsertThread, type ThreadChannel } from './channels';
+import { Embed } from './embed';
 import type { Guild } from './guild';
 import { upsertMember, type Member } from './member';
 import { upsertUser, type User } from './user';
-import { emojiParam, getTextChannel, parseTimestamp, reactionKey, splitFiles, toAttachment, toPoll, toReaction } from './util';
+import { emojiParam, getTextChannel, parseTimestamp, reactionKey, splitFiles, toPoll, toReaction } from './util';
 
 /**
  * A message in a channel, thread or DM. Messages are cached on their channel's `messages`, so messages in DMs,
@@ -31,7 +33,7 @@ export class Message extends Base {
     mentions: User[] = [];
     mentionRoles: string[] = [];
     attachments: Attachment[] = [];
-    embeds: APIEmbed[] = [];
+    embeds: Embed[] = [];
     components: APIMessageComponent[] = [];
     stickerItems: APIStickerItem[] = [];
     /** Keyed by custom emoji id, or by the emoji itself for unicode ones. Kept current by reaction events while cached. */
@@ -92,8 +94,8 @@ export class Message extends Base {
             this.mentions = data.mentions.map((user) => (user.member !== undefined && guildId !== null ? upsertMember(this.client, { ...user.member, user }, guildId).user : upsertUser(this.client, user)));
         }
         if (data.mention_roles !== undefined) this.mentionRoles = data.mention_roles;
-        if (data.attachments !== undefined) this.attachments = data.attachments.map(toAttachment);
-        if (data.embeds !== undefined) this.embeds = data.embeds;
+        if (data.attachments !== undefined) this.attachments = data.attachments.map((attachment) => new Attachment(this.client, attachment));
+        if (data.embeds !== undefined) this.embeds = data.embeds.map((embed) => new Embed(embed));
         if (data.components !== undefined) this.components = data.components;
         if (data.sticker_items !== undefined) this.stickerItems = data.sticker_items;
         if (data.reactions !== undefined) this.reactions = new Collection(data.reactions.map((reaction) => [reactionKey(reaction.emoji), toReaction(reaction)]));

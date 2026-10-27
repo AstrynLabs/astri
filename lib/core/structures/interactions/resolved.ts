@@ -1,11 +1,10 @@
-import type { Attachment } from '../../../interfaces';
 import type { APIInteractionResolvedData, ClientContext } from '../../../types';
+import { Attachment } from '../attachment';
 import type { Channel } from '../channels';
 import { upsertMember, type Member } from '../member';
 import { upsertMessage, type Message } from '../message';
 import { Role } from '../role';
 import { upsertUser, type User } from '../user';
-import { toAttachment } from '../util';
 import { resolveChannel } from './util';
 
 /**
@@ -42,6 +41,6 @@ export class InteractionResolved {
         }
         for (const [id, channel] of Object.entries(data.channels ?? {})) this.channels.set(id, resolveChannel(client, channel, guildId));
         for (const [id, message] of Object.entries(data.messages ?? {})) this.messages.set(id, upsertMessage(client, message, guildId));
-        for (const [id, attachment] of Object.entries(data.attachments ?? {})) this.attachments.set(id, toAttachment(attachment));
+        for (const [id, attachment] of Object.entries(data.attachments ?? {})) this.attachments.set(id, new Attachment(client, attachment));
     }
 }

@@ -1,3 +1,5 @@
+export * from './applicationCommand';
+export * from './autoModeration';
 export * from './cache';
 export * from './channel';
 export * from './client';
@@ -6,3 +8,8 @@ export * from './gateway';
 export * from './interaction';
 export * from './message';
 export * from './rest';
+export * from './scheduledEvent';
+export * from './stageInstance';
+export * from './sticker';
+export * from './voice';
+export * from './webhook';
