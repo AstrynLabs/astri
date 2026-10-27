@@ -1,6 +1,6 @@
 {
     "name": "astri-ts",
-    "version": "1.0.0",
+    "version": "0.10.0",
     "description": "A Efficient and Fast Discord API Wrapper for Node.js",
     "type": "module",
     "main": "./dist/index.js",
