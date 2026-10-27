@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionTypes, ButtonStyles, ComponentTypes } from '../constants';
-import type { APIApplicationCommandOptionRequest, APIButtonRequest, APIComponentEmojiRequest, APIStringChoiceRequest, ComponentEmojiResolvable, NormalButtonData, PremiumButtonData, URLButtonData } from '../types';
+import type { APIApplicationCommandOptionRequest, APIButtonRequest, APIComponentEmojiRequest, APIStringChoiceRequest, ColorResolvable, ComponentEmojiResolvable, NormalButtonData, PremiumButtonData, URLButtonData } from '../types';
 
 export function withPrefix(prefix: string | null, customId: string): string {
     return prefix === null ? customId : `${prefix}:${customId}`;
@@ -29,6 +29,14 @@ export function toDefaultValues<T extends 'channel' | 'role' | 'user'>(ids: stri
 
 export function isSubcommand(option: APIApplicationCommandOptionRequest): boolean {
     return option.type === ApplicationCommandOptionTypes.Subcommand || option.type === ApplicationCommandOptionTypes.SubcommandGroup;
+}
+
+export function toColor(color: ColorResolvable): number {
+    return typeof color === 'number' ? color : Number.parseInt(color.slice(1), 16);
+}
+
+export function checkLength(value: string | null | undefined, limit: number, what: string): void {
+    if (value != null && value.length > limit) throw new TypeError(`${what} can't be longer than ${limit} characters`);
 }
 
 export function toStringChoice(choice: string | APIStringChoiceRequest): APIStringChoiceRequest {

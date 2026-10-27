@@ -19,6 +19,7 @@ import type {
     APIModalUserSelectRequest,
     APINumberOptionRequest,
     APIRadioGroupRequest,
+    APIRichEmbedAuthor,
     APIRoleSelectRequest,
     APISeparatorRequest,
     APIStringChoiceRequest,
@@ -113,3 +114,9 @@ export type RadioGroupData = Omit<APIRadioGroupRequest, 'type'>;
 export type CheckboxGroupData = Omit<APICheckboxGroupRequest, 'type'>;
 
 export type CheckboxData = Omit<APICheckboxRequest, 'type'>;
+
+/** An embed's author. `url` makes the name a link, and `icon_url` shows a small image beside it. */
+export type EmbedAuthorData = Omit<APIRichEmbedAuthor, 'name'> & { name: string };
+
+/** An RGB color as a number, e.g. `0x5865f2`, or a hex string, e.g. `#5865f2`. */
+export type ColorResolvable = number | `#${string}`;

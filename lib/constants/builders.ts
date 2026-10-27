@@ -9,5 +9,13 @@ export const BuilderLimits = {
     MediaGalleryItems: 10,
     ModalComponents: 5,
     ModalTitleLength: 45,
-    CustomIdLength: 100
+    CustomIdLength: 100,
+    EmbedTitleLength: 256,
+    EmbedDescriptionLength: 4096,
+    EmbedFields: 25,
+    EmbedFieldNameLength: 256,
+    EmbedFieldValueLength: 1024,
+    EmbedFooterTextLength: 2048,
+    EmbedAuthorNameLength: 256,
+    EmbedTotalLength: 6000
 } as const;

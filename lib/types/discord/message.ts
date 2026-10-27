@@ -8,6 +8,10 @@ export type APIAttachment = Schemas['MessageAttachmentResponse'];
 export type APIEmbed = Schemas['MessageEmbedResponse'];
 /** An embed as sent in a request. */
 export type APIRichEmbed = Schemas['RichEmbed'];
+export type APIRichEmbedAuthor = Schemas['RichEmbedAuthor'];
+export type APIRichEmbedField = Schemas['RichEmbedField'];
+export type APIRichEmbedFooter = Schemas['RichEmbedFooter'];
+export type APIRichEmbedImage = Schemas['RichEmbedImage'];
 export type APIMessageComponent = APIMessage['components'][number];
 export type APIStickerItem = Schemas['MessageStickerItemResponse'];
 export type APIMessageReference = Schemas['MessageReferenceResponse'];
