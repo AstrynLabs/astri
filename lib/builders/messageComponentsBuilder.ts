@@ -19,7 +19,6 @@ export class MessageComponentsBuilder extends ComponentGroupBuilder<APIContainer
         return this;
     }
 
-    /** The flags and components to spread into a message, reply or webhook body. Add other flags with `|`. */
     toMessageData(): ComponentsV2MessageData {
         return { flags: MessageFlags.IsComponentsV2, components: this.components };
     }

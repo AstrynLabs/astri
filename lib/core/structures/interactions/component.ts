@@ -1,9 +1,10 @@
-import { InteractionCallbackTypes, type ComponentTypes, type InteractionTypes } from '../../../constants';
-import type { APIInteraction, APIMessageComponentInteractionData, ClientContext, InteractionModalData, InteractionUpdateData } from '../../../types';
+import { ComponentTypes, InteractionCallbackTypes, type InteractionTypes } from '../../../constants';
+import type { APIInteraction, APIMessageComponentInteractionData, ChannelSelectInteraction, ClientContext, ComponentSelection, InteractionModalData, InteractionUpdateData, MentionableSelectInteraction, RoleSelectInteraction, StringSelectInteraction, UserSelectInteraction } from '../../../types';
 import { upsertMessage, type Message } from '../message';
 import { splitFiles } from '../util';
 import { RepliableInteraction } from './interaction';
 import { InteractionResolved } from './resolved';
+import { resolveSelection } from './util';
 
 /** A button was clicked or a select menu was submitted. */
 export class ComponentInteraction extends RepliableInteraction {
@@ -14,6 +15,11 @@ export class ComponentInteraction extends RepliableInteraction {
     readonly values: string[];
     /** User, role, mentionable and channel selects only. */
     readonly resolved: InteractionResolved;
+    /**
+     * Select menus only: the chosen values, with ids swapped for the users, roles or channels they point to. Narrow
+     * it with {@link isStringSelect} and the other select checks. Empty for buttons.
+     */
+    readonly selected: ComponentSelection;
     /** The message the component is on. */
     readonly message: Message;
 
@@ -24,7 +30,32 @@ export class ComponentInteraction extends RepliableInteraction {
         this.componentType = component.component_type;
         this.values = component.values ?? [];
         this.resolved = new InteractionResolved(client, component.resolved, this.guildId);
+        this.selected = resolveSelection(this.componentType, this.values, this.resolved);
         this.message = upsertMessage(client, data.message!, this.guildId);
+    }
+
+    isButton(): boolean {
+        return this.componentType === ComponentTypes.Button;
+    }
+
+    isStringSelect(): this is StringSelectInteraction {
+        return this.componentType === ComponentTypes.StringSelect;
+    }
+
+    isUserSelect(): this is UserSelectInteraction {
+        return this.componentType === ComponentTypes.UserSelect;
+    }
+
+    isRoleSelect(): this is RoleSelectInteraction {
+        return this.componentType === ComponentTypes.RoleSelect;
+    }
+
+    isMentionableSelect(): this is MentionableSelectInteraction {
+        return this.componentType === ComponentTypes.MentionableSelect;
+    }
+
+    isChannelSelect(): this is ChannelSelectInteraction {
+        return this.componentType === ComponentTypes.ChannelSelect;
     }
 
     /** Acknowledges the interaction without a loading state, to edit the message later through {@link editReply}. */

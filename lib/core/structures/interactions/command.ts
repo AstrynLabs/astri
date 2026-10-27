@@ -1,7 +1,10 @@
 import { InteractionCallbackTypes, type ApplicationCommandTypes, type InteractionTypes } from '../../../constants';
 import type { APIApplicationCommandInteractionData, APIInteraction, AutocompleteChoice, ClientContext, InteractionModalData } from '../../../types';
+import type { Attachment } from '../attachment';
+import type { Channel } from '../channels';
 import type { Member } from '../member';
 import type { Message } from '../message';
+import type { Role } from '../role';
 import type { User } from '../user';
 import { Interaction, RepliableInteraction } from './interaction';
 import { CommandOptions } from './options';
@@ -44,6 +47,118 @@ export class ChatInputCommandInteraction extends CommandInteraction {
     constructor(client: ClientContext, data: APIInteraction) {
         super(client, data);
         this.options = new CommandOptions((data.data as APIApplicationCommandInteractionData).options, this.resolved);
+    }
+
+    /** The invoked subcommand group, or `null` when the subcommand is not in one. */
+    get subcommandGroup(): string | null {
+        return this.options.subcommandGroup;
+    }
+
+    /** The invoked subcommand, or `null` when the command has none. */
+    get subcommand(): string | null {
+        return this.options.subcommand;
+    }
+
+    /** `null` when the option was left out. */
+    getString(name: string): string | null {
+        return this.options.getString(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredString(name: string): string {
+        return this.options.getString(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getInteger(name: string): number | null {
+        return this.options.getInteger(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredInteger(name: string): number {
+        return this.options.getInteger(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getNumber(name: string): number | null {
+        return this.options.getNumber(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredNumber(name: string): number {
+        return this.options.getNumber(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getBoolean(name: string): boolean | null {
+        return this.options.getBoolean(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredBoolean(name: string): boolean {
+        return this.options.getBoolean(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getAttachment(name: string): Attachment | null {
+        return this.options.getAttachment(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredAttachment(name: string): Attachment {
+        return this.options.getAttachment(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getChannel(name: string): Channel | null {
+        return this.options.getChannel(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredChannel(name: string): Channel {
+        return this.options.getChannel(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getRole(name: string): Role | null {
+        return this.options.getRole(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredRole(name: string): Role {
+        return this.options.getRole(name, true);
+    }
+
+    /** `null` when the option was left out. */
+    getUser(name: string): User | null {
+        return this.options.getUser(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredUser(name: string): User {
+        return this.options.getUser(name, true);
+    }
+
+    /** `null` when the option was left out, or the user is not in the guild. */
+    getMember(name: string): Member | null {
+        return this.options.getMember(name);
+    }
+
+    /** @throws When the option was left out, or the user is not in the guild. */
+    getRequiredMember(name: string): Member {
+        const member = this.options.getMember(name);
+        if (member === null) throw new TypeError(`Option "${name}" has no member`);
+        return member;
+    }
+
+    /** `null` when the option was left out. */
+    getMentionable(name: string): User | Role | null {
+        return this.options.getMentionable(name);
+    }
+
+    /** @throws When the option was left out. */
+    getRequiredMentionable(name: string): User | Role {
+        return this.options.getMentionable(name, true);
     }
 }
 
@@ -105,6 +220,16 @@ export class AutocompleteInteraction extends Interaction {
         this.commandType = command.type;
         this.commandGuildId = command.guild_id ?? null;
         this.options = new CommandOptions(command.options, new InteractionResolved(client, command.resolved, this.guildId));
+    }
+
+    /** The subcommand group being typed in, or `null` when the subcommand is not in one. */
+    get subcommandGroup(): string | null {
+        return this.options.subcommandGroup;
+    }
+
+    /** The subcommand being typed in, or `null` when the command has none. */
+    get subcommand(): string | null {
+        return this.options.subcommand;
     }
 
     /** Shows up to 25 suggestions. An empty list shows none. */

@@ -1,3 +1,4 @@
+import type { Channel, ComponentInteraction, Role, User } from '../core/structures';
 import type { APIComponents } from './discord';
 import type { RESTFile } from './rest';
 
@@ -29,6 +30,15 @@ export interface InteractionDeferOptions {
 }
 
 export type InteractionModalData = Schemas['ModalInteractionCallbackRequestData'];
+
+/** What a select menu's values point to: strings for string selects, otherwise the resolved users, roles or channels. */
+export type ComponentSelection = string[] | User[] | Role[] | Channel[] | Array<User | Role>;
+
+export type StringSelectInteraction = ComponentInteraction & { readonly selected: string[] };
+export type UserSelectInteraction = ComponentInteraction & { readonly selected: User[] };
+export type RoleSelectInteraction = ComponentInteraction & { readonly selected: Role[] };
+export type MentionableSelectInteraction = ComponentInteraction & { readonly selected: Array<User | Role> };
+export type ChannelSelectInteraction = ComponentInteraction & { readonly selected: Channel[] };
 
 /** An autocomplete suggestion. `value` is what the option is set to when it is picked. */
 export interface AutocompleteChoice<T extends string | number = string | number> {

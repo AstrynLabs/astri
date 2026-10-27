@@ -82,7 +82,9 @@ export class CommandOptions {
     getMentionable<R extends boolean = false>(name: string, required?: R): OptionResult<R, User | Role> {
         const id = this.#value(name, [ApplicationCommandOptionTypes.Mentionable, ApplicationCommandOptionTypes.User, ApplicationCommandOptionTypes.Role], required) as string | null;
         if (id === null) return null as OptionResult<R, User | Role>;
-        return (this.#resolved.users.get(id) ?? this.#resolved.roles.get(id) ?? null) as OptionResult<R, User | Role>;
+        const value = this.#resolved.users.get(id) ?? this.#resolved.roles.get(id);
+        if (value === undefined && required === true) throw new TypeError(`Option "${name}" was not resolved`);
+        return (value ?? null) as OptionResult<R, User | Role>;
     }
 
     getAttachment<R extends boolean = false>(name: string, required?: R): OptionResult<R, Attachment> {
