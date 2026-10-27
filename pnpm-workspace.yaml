@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  zlib-sync: true
+patchedDependencies:
+  tsup@9.0.0: patches/tsup@9.0.0.patch
+  typedoc@0.28.20: patches/typedoc@0.28.20.patch

@@ -10,7 +10,9 @@ node_modules
 test
 lib
 tsconfig*
-package.cjs.json
 .prettierrc
 .eslintrc.json
 renovate.json
+scripts
+typedoc.json
+.github

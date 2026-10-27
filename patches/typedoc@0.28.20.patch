@@ -1,0 +1,225 @@
+diff --git a/dist/index.js b/dist/index.js
+index daa82424664dcf1236746613e27a3e79abf96bdd..d2bc352bc0128a029d09408a55d21333924141f3 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -54,7 +54,7 @@ var __privateMethod = (obj, member2, method) => (__accessCheck(obj, member2, "ac
+ 
+ // src/lib/application.ts
+ import * as Path7 from "path";
+-import ts17 from "typescript";
++import ts17 from "@typescript/typescript6";
+ import { ReflectionSymbolId as ReflectionSymbolId4 } from "#models";
+ import {
+   AbstractComponent as AbstractComponent5,
+@@ -89,7 +89,7 @@ import { Deserializer, Serializer } from "#serialization";
+ 
+ // src/lib/converter/context.ts
+ import { ok as assert2 } from "assert";
+-import ts7 from "typescript";
++import ts7 from "@typescript/typescript6";
+ import {
+   Comment as Comment3,
+   ContainerReflection,
+@@ -100,7 +100,7 @@ import {
+ } from "#models";
+ 
+ // src/lib/converter/utilities/nodes.ts
+-import ts from "typescript";
++import ts from "@typescript/typescript6";
+ function isNamedNode(node) {
+   const name = node.name;
+   return !!name && (ts.isMemberName(name) || ts.isComputedPropertyName(name));
+@@ -144,7 +144,7 @@ var ConverterEvents = {
+ };
+ 
+ // src/lib/converter/utilities/symbols.ts
+-import ts2 from "typescript";
++import ts2 from "@typescript/typescript6";
+ function resolveAliasedSymbol(symbol, checker) {
+   const seen = /* @__PURE__ */ new Set();
+   while (ts2.SymbolFlags.Alias & symbol.flags) {
+@@ -158,10 +158,10 @@ function resolveAliasedSymbol(symbol, checker) {
+ // src/lib/converter/comments/index.ts
+ import { Comment as Comment2, ReflectionKind as ReflectionKind2 } from "#models";
+ import { assertNever as assertNever3, i18n as i18n4, Logger, setUnion } from "#utils";
+-import ts5 from "typescript";
++import ts5 from "@typescript/typescript6";
+ 
+ // src/lib/converter/comments/blockLexer.ts
+-import ts3 from "typescript";
++import ts3 from "@typescript/typescript6";
+ function* lexBlockComment(file, pos = 0, end = file.length, createSymbolId = () => {
+   throw new Error("unreachable");
+ }, jsDoc, checker) {
+@@ -532,7 +532,7 @@ import { ReflectionKind } from "#models";
+ import { CommentStyle, nicePath } from "#node-utils";
+ import { assertNever, filter, firstDefined, i18n } from "#utils";
+ import { ok } from "assert";
+-import ts4 from "typescript";
++import ts4 from "@typescript/typescript6";
+ var variablePropertyKinds = [
+   ts4.SyntaxKind.PropertyDeclaration,
+   ts4.SyntaxKind.PropertySignature,
+@@ -2532,7 +2532,7 @@ import { ReflectionSymbolId } from "#models";
+ import { findPackageForPath, getQualifiedName, normalizePath, resolveDeclarationMaps } from "#node-utils";
+ import "#utils";
+ import { relative } from "node:path";
+-import ts6 from "typescript";
++import ts6 from "@typescript/typescript6";
+ var transientCount = 0;
+ var transientIds = /* @__PURE__ */ new WeakMap();
+ var symbolIdCache = /* @__PURE__ */ new WeakMap();
+@@ -2903,7 +2903,7 @@ var Context = class _Context {
+ };
+ 
+ // src/lib/converter/convert-expression.ts
+-import ts8 from "typescript";
++import ts8 from "@typescript/typescript6";
+ function convertDefaultValue(node) {
+   const anyNode = node;
+   if (anyNode?.initializer) {
+@@ -2952,7 +2952,7 @@ function convertExpression(expression) {
+ 
+ // src/lib/converter/converter.ts
+ import { ok as ok6 } from "assert";
+-import ts16 from "typescript";
++import ts16 from "@typescript/typescript6";
+ import {
+   Comment as Comment9,
+   DocumentReflection,
+@@ -2982,7 +2982,7 @@ import {
+ import { basename, dirname as dirname2, resolve as resolve2 } from "path";
+ 
+ // src/lib/converter/comments/linkResolver.ts
+-import ts9 from "typescript";
++import ts9 from "@typescript/typescript6";
+ import {
+   makeRecursiveVisitor,
+   Reflection,
+@@ -3587,7 +3587,7 @@ function* lexCommentString2(file) {
+ 
+ // src/lib/converter/symbols.ts
+ import assert5 from "assert";
+-import ts12 from "typescript";
++import ts12 from "@typescript/typescript6";
+ import {
+   DeclarationReflection as DeclarationReflection6,
+   IntrinsicType as IntrinsicType4,
+@@ -3676,7 +3676,7 @@ function convertIndexSignatures(context, type2) {
+ }
+ 
+ // src/lib/converter/factories/signature.ts
+-import ts10 from "typescript";
++import ts10 from "@typescript/typescript6";
+ import assert4 from "assert";
+ import {
+   DeclarationReflection as DeclarationReflection4,
+@@ -4129,7 +4129,7 @@ function convertPredicate(predicate, context) {
+ 
+ // src/lib/converter/jsdoc.ts
+ import { ok as ok4 } from "assert";
+-import ts11 from "typescript";
++import ts11 from "@typescript/typescript6";
+ import { DeclarationReflection as DeclarationReflection5, IntrinsicType as IntrinsicType3, ReflectionKind as ReflectionKind8, ReflectionType, SignatureReflection as SignatureReflection3 } from "#models";
+ import { i18n as i18n5 } from "#utils";
+ function convertJsDocAliasAsInterface(context, symbol, exportSymbol, declaration) {
+@@ -5271,7 +5271,7 @@ function isTypeOnlyExport(symbol) {
+ 
+ // src/lib/converter/types.ts
+ import assert6 from "assert";
+-import ts13 from "typescript";
++import ts13 from "@typescript/typescript6";
+ import {
+   ArrayType,
+   ConditionalType,
+@@ -7426,7 +7426,7 @@ import {
+ } from "#models";
+ import { findPackageForPath as findPackageForPath3, getHumanName as getHumanName2 } from "#node-utils";
+ import { filterMap as filterMap3, zip as zip2 } from "#utils";
+-import ts14 from "typescript";
++import ts14 from "@typescript/typescript6";
+ var ImplementsPlugin = class extends ConverterComponent {
+   resolved = /* @__PURE__ */ new WeakSet();
+   postponed = /* @__PURE__ */ new WeakMap();
+@@ -8692,7 +8692,7 @@ __decorateElement(_init6, 4, "includeVersion", _includeVersion_dec, PackagePlugi
+ __decoratorMetadata(_init6, PackagePlugin);
+ 
+ // src/lib/converter/plugins/SourcePlugin.ts
+-import ts15 from "typescript";
++import ts15 from "@typescript/typescript6";
+ import { DeclarationReflection as DeclarationReflection11, ReflectionKind as ReflectionKind17, SignatureReflection as SignatureReflection8, SourceReference } from "#models";
+ import { getCommonDirectory, normalizePath as normalizePath5, Option as Option7 } from "#node-utils";
+ import { relative as relative2 } from "path";
+@@ -17833,7 +17833,7 @@ __export(internationalization_exports, {
+ import { i18n as i18n40 } from "#utils";
+ 
+ // src/lib/index.ts
+-import TypeScript from "typescript";
++import TypeScript from "@typescript/typescript6";
+ export {
+   Application,
+   ArgumentsReader,
+diff --git a/dist/node-utils.js b/dist/node-utils.js
+index 96a483d44c9ca066a5128dc40abcffdb8a3aee4b..8e587b70ab10328582daa57d4a3aaea646a1b814 100644
+--- a/dist/node-utils.js
++++ b/dist/node-utils.js
+@@ -521,7 +521,7 @@ function isDebugging() {
+ }
+ 
+ // src/lib/utils/loggers.ts
+-import ts from "typescript";
++import ts from "@typescript/typescript6";
+ import { resolve as resolve3 } from "path";
+ import { ConsoleLogger, LogLevel } from "#utils";
+ var Colors = {
+@@ -1432,14 +1432,14 @@ function valueIsWithinBounds(value, minValue, maxValue) {
+ }
+ 
+ // src/lib/utils/options/options.ts
+-import ts3 from "typescript";
++import ts3 from "@typescript/typescript6";
+ import { resolve as resolve7 } from "path";
+ 
+ // src/lib/utils/entry-point.ts
+ import { assertNever, i18n as i18n4 } from "#utils";
+ import * as FS from "fs";
+ import { join as join4, relative as relative4, resolve as resolve6 } from "path";
+-import ts2 from "typescript";
++import ts2 from "@typescript/typescript6";
+ 
+ // src/lib/utils/declaration-maps.ts
+ import { existsSync as existsSync2 } from "fs";
+@@ -3493,13 +3493,13 @@ var PackageJsonReader = class {
+ 
+ // src/lib/utils/options/readers/tsconfig.ts
+ import { dirname as dirname6, join as join5, resolve as resolve8 } from "path";
+-import ts5 from "typescript";
++import ts5 from "@typescript/typescript6";
+ import { ok as ok4 } from "assert";
+ import { i18n as i18n9, unique as unique3, Validation as Validation4 } from "#utils";
+ import { createRequire as createRequire3 } from "module";
+ 
+ // src/lib/utils/tsconfig.ts
+-import ts4 from "typescript";
++import ts4 from "@typescript/typescript6";
+ import { createRequire as createRequire2 } from "module";
+ function findTsConfigFile(path, usedFile) {
+   let fileToRead = path;
+@@ -3746,7 +3746,7 @@ function mergeConfigs(from, into) {
+ // src/lib/utils/options/readers/typedoc.ts
+ import { dirname as dirname7, join as join6, resolve as resolve9 } from "path";
+ import * as FS2 from "fs";
+-import ts6 from "typescript";
++import ts6 from "@typescript/typescript6";
+ import { ok as ok5 } from "assert";
+ import { createRequire as createRequire4 } from "module";
+ import { pathToFileURL as pathToFileURL2 } from "url";
+@@ -6854,7 +6854,7 @@ var characterReferenceCodePointReplacements = /* @__PURE__ */ new Map([
+ ]);
+ 
+ // src/lib/utils/tsutils.ts
+-import ts7 from "typescript";
++import ts7 from "@typescript/typescript6";
+ function getQualifiedName(symbol, defaultName) {
+   let sym = symbol;
+   const parts = [];

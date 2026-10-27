@@ -1,3 +1,5 @@
 # astri-ts
 
-astri-ts is a personal fork of Eris.
+astri-ts was a personal fork of Eris.
+
+this is the next branch, a full on from scratch rewrite of the eris fork.
