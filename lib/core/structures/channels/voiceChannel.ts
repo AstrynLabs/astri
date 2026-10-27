@@ -24,6 +24,8 @@ export abstract class BaseGuildVoiceChannel extends GuildChannel {
     rateLimitPerUser = 0;
     /** Cached messages from the built-in text chat, filled as they are sent, edited or fetched. */
     readonly messages: Cache<string, Message>;
+    /** Voice channels only: the topic shown while people are connected, or `null`. */
+    status: string | null = null;
 
     constructor(client: ClientContext, data: APIChannel, guildId: string) {
         super(client, data, guildId);
@@ -40,6 +42,7 @@ export abstract class BaseGuildVoiceChannel extends GuildChannel {
         if (data.last_message_id !== undefined) this.lastMessageId = data.last_message_id;
         if (data.last_pin_timestamp !== undefined) this.lastPinTimestamp = parseTimestamp(data.last_pin_timestamp);
         if (data.rate_limit_per_user !== undefined) this.rateLimitPerUser = data.rate_limit_per_user;
+        if (data.status !== undefined) this.status = data.status;
     }
 
     /** Sends a message. Needs the send messages permission. */

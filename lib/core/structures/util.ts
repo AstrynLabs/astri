@@ -1,5 +1,5 @@
-import type { Activity, ApplicationCommandOption, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildBan, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule } from '../../interfaces';
-import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIGuildBan, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, MessageCreateData, MessageFetchOptions, PinFetchOptions, RESTFile, TextBasedChannel } from '../../types';
+import type { Activity, ApplicationCommandOption, AuditLogEntry, AutoModerationAction, AutoModerationActionExecution, AutoModerationTriggerMetadata, ClientStatus, EmbedMedia, GuildApplicationCommandPermissions, GuildBan, Integration, InviteGuild, MessageReaction, PinnedMessages, Poll, ReactionEmoji, RecurrenceRule, Subscription, VoiceChannelEffect } from '../../interfaces';
+import type { APIActivity, APIApplicationCommandOption, APIAutoModerationAction, APIAutoModerationTriggerMetadata, APIClientStatus, APIEmbed, APIGuildApplicationCommandPermissions, APIGuildBan, APIIntegration, APIInviteGuild, APIMessageReaction, APIPoll, APIReactionEmoji, APIRecurrenceRule, APISubscription, ClientContext, EmojiResolvable, GatewayAutoModerationActionExecutionData, GatewayGuildAuditLogEntryCreateData, GatewayVoiceChannelEffectSendData, MessageCreateData, MessageFetchOptions, PinFetchOptions, RESTFile, TextBasedChannel } from '../../types';
 import { upsertMessage, type Message } from './message';
 import { upsertUser } from './user';
 
@@ -290,4 +290,78 @@ export async function bulkDeleteMessages(client: ClientContext, channelId: strin
 
 export function toGuildBan(client: ClientContext, data: APIGuildBan): GuildBan {
     return { user: upsertUser(client, data.user), reason: data.reason };
+}
+
+export function toAuditLogEntry(data: GatewayGuildAuditLogEntryCreateData): AuditLogEntry {
+    return {
+        id: data.id,
+        guildId: data.guild_id,
+        actionType: data.action_type,
+        userId: data.user_id,
+        targetId: data.target_id,
+        changes: (data.changes ?? []).map((change) => ({ key: change.key ?? '', newValue: change.new_value, oldValue: change.old_value })),
+        options: data.options ?? {},
+        reason: data.reason ?? null
+    };
+}
+
+export function toIntegration(client: ClientContext, data: APIIntegration, guildId: string): Integration {
+    const { application } = data;
+    return {
+        id: data.id,
+        guildId,
+        name: data.name,
+        type: data.type,
+        enabled: data.enabled,
+        accountId: data.account.id,
+        accountName: data.account.name,
+        user: data.user === undefined ? null : upsertUser(client, data.user),
+        syncing: data.syncing ?? false,
+        roleId: data.role_id ?? null,
+        enableEmoticons: data.enable_emoticons ?? false,
+        expireBehavior: data.expire_behavior ?? null,
+        expireGracePeriod: data.expire_grace_period ?? null,
+        syncedAt: parseTimestamp(data.synced_at ?? null),
+        subscriberCount: data.subscriber_count ?? null,
+        revoked: data.revoked ?? false,
+        application:
+            application === undefined
+                ? null
+                : {
+                      id: application.id,
+                      name: application.name,
+                      icon: application.icon,
+                      description: application.description,
+                      bot: application.bot === undefined ? null : upsertUser(client, application.bot)
+                  },
+        scopes: data.scopes ?? []
+    };
+}
+
+export function toSubscription(data: APISubscription): Subscription {
+    return {
+        id: data.id,
+        userId: data.user_id,
+        skuIds: data.sku_ids,
+        renewalSkuIds: data.renewal_sku_ids,
+        entitlementIds: data.entitlement_ids,
+        currentPeriodStart: Date.parse(data.current_period_start),
+        currentPeriodEnd: Date.parse(data.current_period_end),
+        status: data.status,
+        canceledAt: parseTimestamp(data.canceled_at),
+        country: data.country ?? null
+    };
+}
+
+export function toVoiceChannelEffect(data: GatewayVoiceChannelEffectSendData): VoiceChannelEffect {
+    return {
+        channelId: data.channel_id,
+        guildId: data.guild_id,
+        userId: data.user_id,
+        emoji: data.emoji == null ? null : toReactionEmoji(data.emoji),
+        animationType: data.animation_type ?? null,
+        animationId: data.animation_id ?? null,
+        soundId: data.sound_id === undefined ? null : String(data.sound_id),
+        soundVolume: data.sound_volume ?? null
+    };
 }

@@ -76,6 +76,11 @@ export interface GatewayVoiceStateUpdateData {
     self_deaf: boolean;
 }
 
+/** Body of a soundboard sounds request (opcode 31). */
+export interface GatewayRequestSoundboardSoundsData {
+    guild_ids: string[];
+}
+
 /** Changes to the client's presence. Fields left out keep their last value. */
 export interface PresenceOptions {
     /** Default: `online`. */

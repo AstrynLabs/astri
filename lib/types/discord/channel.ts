@@ -80,6 +80,8 @@ export interface APIChannel {
     last_pin_timestamp?: string | null;
     rtc_region?: string | null;
     video_quality_mode?: number;
+    /** Voice channels only: the topic shown while people are connected. */
+    status?: string | null;
     /** Minutes. */
     default_auto_archive_duration?: number;
     flags?: number;

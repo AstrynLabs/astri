@@ -210,6 +210,32 @@ export class Client extends EventEmitter<ClientEvents> implements ClientContext 
         request.timer = setTimeout(() => this.#expireMemberRequest(chunk.nonce as string, chunk.guildId), request.timeout);
     }
 
+    /** Rejects the `requestGuildMembers` call waiting on `nonce`, if there is one. */
+    rejectMemberRequest(nonce: string, error: Error): void {
+        const request = this.#memberRequests.get(nonce);
+        if (request === undefined) return;
+        clearTimeout(request.timer);
+        this.#memberRequests.delete(nonce);
+        request.reject(error);
+    }
+
+    /**
+     * Asks for the full soundboard sound list of each guild. Each list arrives as a `soundboardSounds` event and
+     * replaces the guild's cached sounds.
+     *
+     * @throws When a guild's shard is not ready.
+     */
+    requestSoundboardSounds(guildIds: string[]): void {
+        const byShard = new Map<Shard, string[]>();
+        for (const guildId of guildIds) {
+            const shard = this.shardFor(guildId);
+            const ids = byShard.get(shard);
+            if (ids === undefined) byShard.set(shard, [guildId]);
+            else ids.push(guildId);
+        }
+        for (const [shard, ids] of byShard) shard.requestSoundboardSounds({ guild_ids: ids });
+    }
+
     /** Fetches a user, cached or not, and caches it. */
     async fetchUser(userId: string): Promise<User> {
         return upsertUser(this, (await this.rest.get('user', userId)) as APIUser);

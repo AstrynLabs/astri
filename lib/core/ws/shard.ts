@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3';
 import { DEFAULT_GATEWAY_URL, GatewayCloseCodes, GatewayOpcodes } from '../../constants';
-import type { GatewayPresenceUpdateData, GatewayReadyData, GatewayReceivePayload, GatewayRequestGuildMembersData, GatewaySendPayload, GatewayVoiceStateUpdateData, ShardEvents, ShardOptions, ShardStatus } from '../../types';
+import type { GatewayPresenceUpdateData, GatewayReadyData, GatewayReceivePayload, GatewayRequestGuildMembersData, GatewayRequestSoundboardSoundsData, GatewaySendPayload, GatewayVoiceStateUpdateData, ShardEvents, ShardOptions, ShardStatus } from '../../types';
 import { Connection } from './connection';
 
 const FATAL_CLOSE_CODES = new Set<number>([GatewayCloseCodes.AuthenticationFailed, GatewayCloseCodes.InvalidShard, GatewayCloseCodes.ShardingRequired, GatewayCloseCodes.InvalidAPIVersion, GatewayCloseCodes.InvalidIntents, GatewayCloseCodes.DisallowedIntents]);
@@ -120,6 +120,15 @@ export class Shard extends EventEmitter<ShardEvents> {
      */
     requestGuildMembers(data: GatewayRequestGuildMembersData): void {
         this.#sendReady({ op: GatewayOpcodes.RequestGuildMembers, d: data });
+    }
+
+    /**
+     * Asks for the soundboard sounds of guilds on this shard. They arrive as one `SOUNDBOARD_SOUNDS` dispatch per guild.
+     *
+     * @throws When the shard is not `ready`.
+     */
+    requestSoundboardSounds(data: GatewayRequestSoundboardSoundsData): void {
+        this.#sendReady({ op: GatewayOpcodes.RequestSoundboardSounds, d: data });
     }
 
     #sendReady(payload: GatewaySendPayload): void {

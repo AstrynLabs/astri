@@ -14,6 +14,7 @@ export * from './message';
 export * from './presence';
 export * from './role';
 export * from './scheduledEvent';
+export * from './soundboardSound';
 export * from './stageInstance';
 export * from './sticker';
 export * from './threadMember';

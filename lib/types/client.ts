@@ -1,7 +1,7 @@
 import type { Cache, CacheManager } from '../core/cache';
 import type { RequestHandler } from '../core/rest';
-import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, Guild, GuildScheduledEvent, Invite, Member, Message, Presence, Role, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
-import type { AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji } from '../interfaces';
+import type { AnyInteraction, AutoModerationRule, Channel, Emoji, Entitlement, Guild, GuildScheduledEvent, Invite, Member, Message, Presence, Role, SoundboardSound, StageInstance, Sticker, ThreadChannel, ThreadMember, User, VoiceState } from '../core/structures';
+import type { AuditLogEntry, AutoModerationActionExecution, GuildApplicationCommandPermissions, GuildMembersChunk, Integration, MessageReaction, MessageReactionAddEvent, MessageReactionEvent, ReactionEmoji, Subscription, VoiceChannelEffect } from '../interfaces';
 import type { TextBasedChannel } from './channel';
 import type { Shard } from '../core/ws';
 import type { CacheManagerOptions } from './cache';
@@ -47,6 +47,7 @@ export interface ClientCaches {
     stageInstances: StageInstance;
     /** The application's entitlements, filled by entitlement events, interactions and fetches. */
     entitlements: Entitlement;
+    soundboardSounds: SoundboardSound;
 }
 
 export interface ClientEvents {
@@ -175,6 +176,39 @@ export interface ClientEvents {
     entitlementDelete: [entitlement: Entitlement];
     /** A guild changed who can use one of the application's commands, or all of them. */
     applicationCommandPermissionsUpdate: [permissions: GuildApplicationCommandPermissions];
+    /** The client's own user changed. `old` is a shallow copy from before the update, or `null` if it was not known yet. */
+    userUpdate: [user: User, old: User | null];
+    /** Needs the view audit log permission and the guild moderation intent. */
+    guildAuditLogEntryCreate: [entry: AuditLogEntry];
+    /** An integration in the guild was created, edited or deleted. Fetch the guild's integrations to see which. */
+    guildIntegrationsUpdate: [guildId: string, guild: Guild | null];
+    integrationCreate: [integration: Integration];
+    integrationUpdate: [integration: Integration];
+    /** `applicationId` is set when the integration was a bot. */
+    integrationDelete: [id: string, guildId: string, applicationId: string | null];
+    guildSoundboardSoundCreate: [sound: SoundboardSound];
+    /** `old` is a shallow copy from before the update, or `null` if the sound was not cached. */
+    guildSoundboardSoundUpdate: [sound: SoundboardSound, old: SoundboardSound | null];
+    /** `sound` is the cached instance, or `null` if it was not cached. */
+    guildSoundboardSoundDelete: [id: string, guildId: string, sound: SoundboardSound | null];
+    /** Several of a guild's sounds were updated at once. `sounds` holds only the updated ones. */
+    guildSoundboardSoundsUpdate: [guildId: string, sounds: SoundboardSound[]];
+    /** A guild's full sound list arrived in reply to {@link Client.requestSoundboardSounds}. Cached sounds not in it were dropped. */
+    soundboardSounds: [guildId: string, sounds: SoundboardSound[]];
+    /** The client's voice server in a guild was assigned or changed. Use with the session id from `voiceStateUpdate` to open a voice connection. */
+    voiceServerUpdate: [guildId: string, token: string, endpoint: string | null];
+    /** A voice channel's status was set or cleared. */
+    voiceChannelStatusUpdate: [channelId: string, guildId: string, status: string | null, channel: Channel | null];
+    /** Someone in a voice channel the client is connected to sent an emoji reaction or played a sound. */
+    voiceChannelEffectSend: [effect: VoiceChannelEffect];
+    /** A user subscribed to one of the application's SKUs. */
+    subscriptionCreate: [subscription: Subscription];
+    /** A subscription renewed, changed SKUs or was canceled. */
+    subscriptionUpdate: [subscription: Subscription];
+    /** A subscription ended. */
+    subscriptionDelete: [subscription: Subscription];
+    /** Discord dropped a gateway send for being sent too often. `retryAfter` is in ms. A matching guild members request is rejected. */
+    gatewayRateLimit: [opcode: number, retryAfter: number, guildId: string, nonce: string | null, shard: Shard];
 }
 
 /** What structures and dispatch handlers need from the client. */
@@ -191,6 +225,8 @@ export interface ClientContext {
     emit<Event extends keyof ClientEvents>(event: Event, ...args: ClientEvents[Event]): boolean;
     /** Hands a members chunk to the `requestGuildMembers` call waiting on its nonce, if there is one. */
     settleMemberRequest(chunk: GuildMembersChunk): void;
+    /** Rejects the `requestGuildMembers` call waiting on `nonce`, if there is one. */
+    rejectMemberRequest(nonce: string, error: Error): void;
 }
 
 /** Updates the client's state for one dispatch event and emits the matching client event. */

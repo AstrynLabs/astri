@@ -1,10 +1,12 @@
-import type { AutoModerationTriggerTypes, ChannelTypes, ReactionTypes } from '../../constants';
+import type { AutoModerationTriggerTypes, ChannelTypes, GatewayOpcodes, ReactionTypes, VoiceChannelEffectAnimationTypes } from '../../constants';
 import type { APIGuildApplicationCommandPermissions } from './applicationCommand';
+import type { APIAuditLogEntry } from './auditLog';
 import type { APIAutoModerationAction, APIAutoModerationRule } from './autoModeration';
 import type { APIChannel, APIThreadMember } from './channel';
 import type { APIGuildEmoji } from './emoji';
 import type { APIEntitlement } from './entitlement';
 import type { APIGuild } from './guild';
+import type { APIIntegration } from './integration';
 import type { APIInteraction } from './interaction';
 import type { APIInvite } from './invite';
 import type { APIGuildMember } from './member';
@@ -12,8 +14,10 @@ import type { APIMessage, APIReactionEmoji, GatewayMessageMember } from './messa
 import type { APIPresence } from './presence';
 import type { APIRole } from './role';
 import type { APIGuildScheduledEvent } from './scheduledEvent';
+import type { APISoundboardSound } from './soundboard';
 import type { APIStageInstance } from './stageInstance';
 import type { APISticker } from './sticker';
+import type { APISubscription } from './subscription';
 import type { APIUser } from './user';
 import type { APIVoiceState } from './voice';
 
@@ -34,6 +38,7 @@ export interface GatewayGuildCreateData extends APIGuild {
     presences: APIPresence[];
     stage_instances: APIStageInstance[];
     guild_scheduled_events: APIGuildScheduledEvent[];
+    soundboard_sounds: APISoundboardSound[];
 }
 
 /** `GUILD_DELETE` body. `unavailable` is set when the guild dropped out in an outage, and absent when the client left or was removed. */
@@ -273,6 +278,77 @@ export interface GatewayGuildMembersChunkData {
     nonce?: string;
 }
 
+export interface GatewayGuildAuditLogEntryCreateData extends APIAuditLogEntry {
+    guild_id: string;
+}
+
+export interface GatewayGuildIntegrationsUpdateData {
+    guild_id: string;
+}
+
+export interface GatewayIntegrationData extends APIIntegration {
+    guild_id: string;
+}
+
+export interface GatewayIntegrationDeleteData {
+    id: string;
+    guild_id: string;
+    /** `discord` integrations only: the bot application that was removed. */
+    application_id?: string;
+}
+
+export interface GatewayGuildSoundboardSoundData extends APISoundboardSound {
+    guild_id: string;
+}
+
+export interface GatewayGuildSoundboardSoundDeleteData {
+    sound_id: string;
+    guild_id: string;
+}
+
+/** `GUILD_SOUNDBOARD_SOUNDS_UPDATE` and `SOUNDBOARD_SOUNDS` body. Only the latter holds the guild's full list. */
+export interface GatewaySoundboardSoundsData {
+    guild_id: string;
+    soundboard_sounds: APISoundboardSound[];
+}
+
+export interface GatewayVoiceServerUpdateData {
+    token: string;
+    guild_id: string;
+    /** `null` while the voice server is unavailable. Wait for another update before reconnecting. */
+    endpoint: string | null;
+}
+
+export interface GatewayVoiceChannelStatusUpdateData {
+    /** Channel id. */
+    id: string;
+    guild_id: string;
+    status: string | null;
+}
+
+/** `VOICE_CHANNEL_EFFECT_SEND` body: an emoji reaction, or a soundboard sound with its emoji. */
+export interface GatewayVoiceChannelEffectSendData {
+    channel_id: string;
+    guild_id: string;
+    user_id: string;
+    emoji?: APIReactionEmoji | null;
+    animation_type?: VoiceChannelEffectAnimationTypes | null;
+    animation_id?: number;
+    /** Soundboard sounds only. */
+    sound_id?: string | number;
+    /** Soundboard sounds only. From 0 to 1. */
+    sound_volume?: number;
+}
+
+/** `RATE_LIMITED` body: a gateway send was dropped for being sent too often. */
+export interface GatewayRateLimitedData {
+    opcode: GatewayOpcodes;
+    /** Seconds. */
+    retry_after: number;
+    /** For guild member requests: which request was dropped. */
+    meta: { guild_id: string; nonce?: string };
+}
+
 /** Body of every dispatch the library handles, keyed by the payload's `t`. */
 export interface GatewayDispatchData {
     GUILD_CREATE: GatewayGuildCreateData;
@@ -332,4 +408,22 @@ export interface GatewayDispatchData {
     ENTITLEMENT_UPDATE: APIEntitlement;
     ENTITLEMENT_DELETE: APIEntitlement;
     APPLICATION_COMMAND_PERMISSIONS_UPDATE: APIGuildApplicationCommandPermissions;
+    USER_UPDATE: APIUser;
+    GUILD_AUDIT_LOG_ENTRY_CREATE: GatewayGuildAuditLogEntryCreateData;
+    GUILD_INTEGRATIONS_UPDATE: GatewayGuildIntegrationsUpdateData;
+    INTEGRATION_CREATE: GatewayIntegrationData;
+    INTEGRATION_UPDATE: GatewayIntegrationData;
+    INTEGRATION_DELETE: GatewayIntegrationDeleteData;
+    GUILD_SOUNDBOARD_SOUND_CREATE: GatewayGuildSoundboardSoundData;
+    GUILD_SOUNDBOARD_SOUND_UPDATE: GatewayGuildSoundboardSoundData;
+    GUILD_SOUNDBOARD_SOUND_DELETE: GatewayGuildSoundboardSoundDeleteData;
+    GUILD_SOUNDBOARD_SOUNDS_UPDATE: GatewaySoundboardSoundsData;
+    SOUNDBOARD_SOUNDS: GatewaySoundboardSoundsData;
+    VOICE_SERVER_UPDATE: GatewayVoiceServerUpdateData;
+    VOICE_CHANNEL_STATUS_UPDATE: GatewayVoiceChannelStatusUpdateData;
+    VOICE_CHANNEL_EFFECT_SEND: GatewayVoiceChannelEffectSendData;
+    SUBSCRIPTION_CREATE: APISubscription;
+    SUBSCRIPTION_UPDATE: APISubscription;
+    SUBSCRIPTION_DELETE: APISubscription;
+    RATE_LIMITED: GatewayRateLimitedData;
 }

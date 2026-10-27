@@ -12,11 +12,13 @@ import { channelUpdate } from './channelUpdate';
 import { entitlementCreate } from './entitlementCreate';
 import { entitlementDelete } from './entitlementDelete';
 import { entitlementUpdate } from './entitlementUpdate';
+import { guildAuditLogEntryCreate } from './guildAuditLogEntryCreate';
 import { guildBanAdd } from './guildBanAdd';
 import { guildBanRemove } from './guildBanRemove';
 import { guildCreate } from './guildCreate';
 import { guildDelete } from './guildDelete';
 import { guildEmojisUpdate } from './guildEmojisUpdate';
+import { guildIntegrationsUpdate } from './guildIntegrationsUpdate';
 import { guildMemberAdd } from './guildMemberAdd';
 import { guildMemberRemove } from './guildMemberRemove';
 import { guildMembersChunk } from './guildMembersChunk';
@@ -29,8 +31,15 @@ import { guildScheduledEventDelete } from './guildScheduledEventDelete';
 import { guildScheduledEventUpdate } from './guildScheduledEventUpdate';
 import { guildScheduledEventUserAdd } from './guildScheduledEventUserAdd';
 import { guildScheduledEventUserRemove } from './guildScheduledEventUserRemove';
+import { guildSoundboardSoundCreate } from './guildSoundboardSoundCreate';
+import { guildSoundboardSoundDelete } from './guildSoundboardSoundDelete';
+import { guildSoundboardSoundsUpdate } from './guildSoundboardSoundsUpdate';
+import { guildSoundboardSoundUpdate } from './guildSoundboardSoundUpdate';
 import { guildStickersUpdate } from './guildStickersUpdate';
 import { guildUpdate } from './guildUpdate';
+import { integrationCreate } from './integrationCreate';
+import { integrationDelete } from './integrationDelete';
+import { integrationUpdate } from './integrationUpdate';
 import { interactionCreate } from './interactionCreate';
 import { inviteCreate } from './inviteCreate';
 import { inviteDelete } from './inviteDelete';
@@ -45,9 +54,14 @@ import { messageReactionRemoveAll } from './messageReactionRemoveAll';
 import { messageReactionRemoveEmoji } from './messageReactionRemoveEmoji';
 import { messageUpdate } from './messageUpdate';
 import { presenceUpdate } from './presenceUpdate';
+import { rateLimited } from './rateLimited';
+import { soundboardSounds } from './soundboardSounds';
 import { stageInstanceCreate } from './stageInstanceCreate';
 import { stageInstanceDelete } from './stageInstanceDelete';
 import { stageInstanceUpdate } from './stageInstanceUpdate';
+import { subscriptionCreate } from './subscriptionCreate';
+import { subscriptionDelete } from './subscriptionDelete';
+import { subscriptionUpdate } from './subscriptionUpdate';
 import { threadCreate } from './threadCreate';
 import { threadDelete } from './threadDelete';
 import { threadListSync } from './threadListSync';
@@ -55,6 +69,10 @@ import { threadMembersUpdate } from './threadMembersUpdate';
 import { threadMemberUpdate } from './threadMemberUpdate';
 import { threadUpdate } from './threadUpdate';
 import { typingStart } from './typingStart';
+import { userUpdate } from './userUpdate';
+import { voiceChannelEffectSend } from './voiceChannelEffectSend';
+import { voiceChannelStatusUpdate } from './voiceChannelStatusUpdate';
+import { voiceServerUpdate } from './voiceServerUpdate';
 import { voiceStateUpdate } from './voiceStateUpdate';
 import { webhooksUpdate } from './webhooksUpdate';
 
@@ -116,7 +134,25 @@ export const dispatchHandlers: DispatchHandlers = {
     ENTITLEMENT_CREATE: entitlementCreate,
     ENTITLEMENT_UPDATE: entitlementUpdate,
     ENTITLEMENT_DELETE: entitlementDelete,
-    APPLICATION_COMMAND_PERMISSIONS_UPDATE: applicationCommandPermissionsUpdate
+    APPLICATION_COMMAND_PERMISSIONS_UPDATE: applicationCommandPermissionsUpdate,
+    USER_UPDATE: userUpdate,
+    GUILD_AUDIT_LOG_ENTRY_CREATE: guildAuditLogEntryCreate,
+    GUILD_INTEGRATIONS_UPDATE: guildIntegrationsUpdate,
+    INTEGRATION_CREATE: integrationCreate,
+    INTEGRATION_UPDATE: integrationUpdate,
+    INTEGRATION_DELETE: integrationDelete,
+    GUILD_SOUNDBOARD_SOUND_CREATE: guildSoundboardSoundCreate,
+    GUILD_SOUNDBOARD_SOUND_UPDATE: guildSoundboardSoundUpdate,
+    GUILD_SOUNDBOARD_SOUND_DELETE: guildSoundboardSoundDelete,
+    GUILD_SOUNDBOARD_SOUNDS_UPDATE: guildSoundboardSoundsUpdate,
+    SOUNDBOARD_SOUNDS: soundboardSounds,
+    VOICE_SERVER_UPDATE: voiceServerUpdate,
+    VOICE_CHANNEL_STATUS_UPDATE: voiceChannelStatusUpdate,
+    VOICE_CHANNEL_EFFECT_SEND: voiceChannelEffectSend,
+    SUBSCRIPTION_CREATE: subscriptionCreate,
+    SUBSCRIPTION_UPDATE: subscriptionUpdate,
+    SUBSCRIPTION_DELETE: subscriptionDelete,
+    RATE_LIMITED: rateLimited
 };
 
 /** Runs the handler for `payload.t`. Dispatches without one are ignored. */

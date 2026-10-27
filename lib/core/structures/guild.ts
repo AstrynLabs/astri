@@ -10,6 +10,7 @@ import { Member, upsertMember } from './member';
 import { Presence } from './presence';
 import { Role, upsertRole } from './role';
 import { GuildScheduledEvent } from './scheduledEvent';
+import { SoundboardSound } from './soundboardSound';
 import { StageInstance } from './stageInstance';
 import { Sticker } from './sticker';
 import { toGuildBan } from './util';
@@ -68,6 +69,8 @@ export class Guild extends Base {
     readonly autoModerationRules: Cache<string, AutoModerationRule>;
     /** Live stages, keyed by stage instance id. */
     readonly stageInstances: Cache<string, StageInstance>;
+    /** Keyed by sound id. Kept current by soundboard events, which need the guild expressions intent. */
+    readonly soundboardSounds: Cache<string, SoundboardSound>;
 
     constructor(client: ClientContext, data: Partial<GatewayGuildCreateData> & { id: string }) {
         super(client, data.id);
@@ -83,14 +86,15 @@ export class Guild extends Base {
         this.scheduledEvents = client.cache.create('scheduledEvents');
         this.autoModerationRules = client.cache.create('autoModerationRules');
         this.stageInstances = client.cache.create('stageInstances');
+        this.soundboardSounds = client.cache.create('soundboardSounds');
         this.patch(data);
     }
 
     /**
      * Applies a payload. Fields missing from `data` keep their current value.
      *
-     * `roles`, `emojis`, `stickers`, `channels`, `threads`, `voice_states`, `stage_instances` and
-     * `guild_scheduled_events` are taken as the complete list: entries not in it are dropped. A channel or thread
+     * `roles`, `emojis`, `stickers`, `channels`, `threads`, `voice_states`, `stage_instances`,
+     * `guild_scheduled_events` and `soundboard_sounds` are taken as the complete list: entries not in it are dropped. A channel or thread
      * whose type changed is replaced with a new instance of the matching class. `members` and `presences` are only
      * ever partial lists, so they add and update without dropping anyone.
      */
@@ -142,6 +146,12 @@ export class Guild extends Base {
         if (data.stickers !== undefined) replaceAll(this.stickers, data.stickers, (sticker) => new Sticker(this.client, { ...sticker, guild_id: this.id }));
         if (data.stage_instances !== undefined) replaceAll(this.stageInstances, data.stage_instances, (stageInstance) => new StageInstance(this.client, stageInstance));
         if (data.guild_scheduled_events !== undefined) replaceAll(this.scheduledEvents, data.guild_scheduled_events, (event) => new GuildScheduledEvent(this.client, event));
+        if (data.soundboard_sounds !== undefined)
+            replaceAll(
+                this.soundboardSounds,
+                data.soundboard_sounds.map((sound) => ({ ...sound, id: sound.sound_id, guild_id: this.id })),
+                (sound) => new SoundboardSound(this.client, sound)
+            );
         if (data.voice_states !== undefined) {
             const ids = new Set<string>();
             for (const voiceState of data.voice_states) {
